@@ -1,0 +1,105 @@
+/**
+ * Prompt Marketplace – Theme (Canva-inspired)
+ * CSS variables and global page styling
+ */
+
+:root {
+  /* Palette */
+  --purple-900: #422364;
+  --purple-600: #705a89;
+  --brown-900: #332102;
+  --beige-50: #fbf4eb;
+  --sage-200: #b3c4b5;
+  --sage-500: #869b8b;
+
+  /* Semantic aliases */
+  --color-primary: var(--purple-900);
+  --color-secondary: var(--purple-600);
+  --color-text: var(--brown-900);
+  --color-bg: var(--beige-50);
+  --color-accent: var(--sage-200);
+  --color-accent-muted: var(--sage-500);
+  --color-outline: var(--brown-900);
+
+  /* Typography */
+  --font-heading: "Georgia", "Times New Roman", Times, serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+
+  /* Borders */
+  --border-width: 1px;
+  --border-color: var(--brown-900);
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--beige-50);
+  color: var(--brown-900);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 0;
+  margin-bottom: var(--space-2);
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4, h5, h6 { font-size: 1rem; }
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+}
+
+a {
+  color: var(--purple-900);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Thin outlined containers */
+.container-outline,
+.panel,
+.card {
+  border: var(--border-width) solid var(--brown-900);
+  border-radius: var(--radius-md);
+}
+
+/* Minimal shadow (optional, kept very subtle) */
+.shadow-subtle {
+  box-shadow: 0 1px 2px rgba(51, 33, 2, 0.06);
+}

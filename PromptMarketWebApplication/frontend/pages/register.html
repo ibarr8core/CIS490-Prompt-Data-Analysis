@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create account – Prompt Marketplace</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-layout">
+      <div class="auth-card">
+        <div class="auth-card-header">Create account</div>
+        <div class="auth-card-body">
+          <form action="#" method="post">
+            <div class="form-group">
+              <label for="reg-fullname">Full Name</label>
+              <input type="text" id="reg-fullname" name="fullname" placeholder="Full Name" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="reg-email">Email</label>
+              <input type="email" id="reg-email" name="email" placeholder="Email" autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="reg-username">Username</label>
+              <input type="text" id="reg-username" name="username" placeholder="Username" autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label for="reg-password">Password</label>
+              <input type="password" id="reg-password" name="password" placeholder="Password" autocomplete="new-password">
+              <p class="form-helper">Must include: special character, number, uppercase letter</p>
+            </div>
+            <div class="form-group">
+              <label for="reg-verify">Verify Password</label>
+              <input type="password" id="reg-verify" name="verify" placeholder="Verify Password" autocomplete="new-password">
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+          </form>
+          <div class="auth-card-links">
+            <p>Already have an account? <a href="login.html">Log in</a></p>
+          </div>
+        </div>
+      </div>
+      <aside class="auth-callout">
+        <h3>Validation / errors</h3>
+        <ul>
+          <li>Please enter a valid email address.</li>
+          <li>Username already in use.</li>
+          <li>Password must meet strength requirements.</li>
+          <li>Passwords do not match.</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

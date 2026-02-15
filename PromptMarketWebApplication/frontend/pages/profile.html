@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile – Prompt Marketplace</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <!-- TOP NAV (same as Explore) -->
+  <nav class="top-nav top-nav--purple">
+    <div class="nav-inner">
+      <a href="explore.html" class="brand">Prompt</a>
+      <div class="search nav-search-center">
+        <input type="search" placeholder="Search prompts..." aria-label="Search prompts">
+      </div>
+      <ul class="nav-links">
+        <li><a href="explore.html">Explore</a></li>
+        <li><a href="#">Create</a></li>
+        <li><a href="login.html">Log in</a></li>
+        <li><a href="register.html">Register</a></li>
+        <li><a href="profile.html" class="nav-avatar" aria-label="Profile"></a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- MAIN: 3 columns -->
+  <main class="page-layout-profile">
+    <!-- Left: avatar + username + counts -->
+    <aside class="profile-sidebar">
+      <span class="profile-avatar-large" aria-hidden="true"></span>
+      <h1 class="profile-username">Username</h1>
+      <div class="profile-counts">
+        <span>Followers 0</span>
+        <span>Following 0</span>
+      </div>
+    </aside>
+
+    <!-- Center: tabs + content box -->
+    <section class="profile-main">
+      <nav class="profile-tabs-wrap" aria-label="Profile sections">
+        <ul class="profile-tabs">
+          <li><span class="active">Posts</span></li>
+          <li><a href="#">Comments</a></li>
+          <li><a href="#">Saved</a></li>
+          <li><a href="#">Upvoted</a></li>
+          <li><a href="#">Downvoted</a></li>
+        </ul>
+      </nav>
+      <div class="profile-content-box">
+        <p class="content-placeholder">Content placeholder — posts, comments, or saved items appear here.</p>
+      </div>
+    </section>
+
+    <!-- Right: Achievements -->
+    <aside class="profile-achievements achievements-panel">
+      <h2>Achievements</h2>
+      <ul class="achievements-list">
+        <li class="achievement-item">
+          <span class="achievement-badge" aria-hidden="true"></span>
+          <span>Top 10% Commenter</span>
+        </li>
+        <li class="achievement-item">
+          <span class="achievement-badge" aria-hidden="true"></span>
+          <span>Top 10% Poster</span>
+        </li>
+        <li class="achievement-item">
+          <span class="achievement-badge" aria-hidden="true"></span>
+          <span>Top 25% Commenter</span>
+        </li>
+        <li class="achievement-item">
+          <span class="achievement-badge" aria-hidden="true"></span>
+          <span>Top 25% Poster</span>
+        </li>
+      </ul>
+    </aside>
+  </main>
+</body>
+</html>
