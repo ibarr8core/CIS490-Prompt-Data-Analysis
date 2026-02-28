@@ -3,78 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile – Prompt Marketplace</title>
+  <title>Profile — Prompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/theme.css">
   <link rel="stylesheet" href="../css/components.css">
 </head>
 <body>
-  <!-- TOP NAV (same as Explore) -->
-  <nav class="top-nav top-nav--purple">
-    <div class="nav-inner">
-      <a href="explore.html" class="brand">Prompt</a>
-      <div class="search nav-search-center">
-        <input type="search" placeholder="Search prompts..." aria-label="Search prompts">
+  <div id="navbar"></div>
+  <main class="page">
+    <div class="container">
+      <div id="profileContent">
+        <div class="profile-layout">
+          <div>
+            <h1 class="h1" id="profileUsername">Username</h1>
+            <p class="text-muted mb-3" id="profileStats">0 followers · 0 following</p>
+            <div class="tabs" id="profileTabsContent">
+              <button type="button" class="tab active" data-tab="posts">Posts</button>
+              <button type="button" class="tab" data-tab="comments">Comments</button>
+              <button type="button" class="tab" data-tab="saved">Saved</button>
+              <button type="button" class="tab" data-tab="upvoted">Upvoted</button>
+              <button type="button" class="tab" data-tab="downvoted">Downvoted</button>
+            </div>
+            <div id="profilePosts" class="grid-prompts mt-2"></div>
+            <div id="profileComments" class="mt-2" style="display: none;"></div>
+            <div id="profileSaved" class="grid-prompts mt-2" style="display: none;"></div>
+            <div id="profileUpvoted" class="grid-prompts mt-2" style="display: none;"></div>
+            <div id="profileDownvoted" class="grid-prompts mt-2" style="display: none;"></div>
+          </div>
+          <div class="achievements-panel">
+            <h3>Achievements</h3>
+            <div class="achievement-item"><span class="badge">1</span> First prompt</div>
+            <div class="achievement-item"><span class="badge">5</span> Five prompts</div>
+            <div class="achievement-item"><span class="badge">10</span> Ten prompts</div>
+            <div class="achievement-item"><span class="badge">★</span> Top creator</div>
+          </div>
+        </div>
       </div>
-      <ul class="nav-links">
-        <li><a href="explore.html">Explore</a></li>
-        <li><a href="#">Create</a></li>
-        <li><a href="login.html">Log in</a></li>
-        <li><a href="register.html">Register</a></li>
-        <li><a href="profile.html" class="nav-avatar" aria-label="Profile"></a></li>
-      </ul>
     </div>
-  </nav>
-
-  <!-- MAIN: 3 columns -->
-  <main class="page-layout-profile">
-    <!-- Left: avatar + username + counts -->
-    <aside class="profile-sidebar">
-      <span class="profile-avatar-large" aria-hidden="true"></span>
-      <h1 class="profile-username">Username</h1>
-      <div class="profile-counts">
-        <span>Followers 0</span>
-        <span>Following 0</span>
-      </div>
-    </aside>
-
-    <!-- Center: tabs + content box -->
-    <section class="profile-main">
-      <nav class="profile-tabs-wrap" aria-label="Profile sections">
-        <ul class="profile-tabs">
-          <li><span class="active">Posts</span></li>
-          <li><a href="#">Comments</a></li>
-          <li><a href="#">Saved</a></li>
-          <li><a href="#">Upvoted</a></li>
-          <li><a href="#">Downvoted</a></li>
-        </ul>
-      </nav>
-      <div class="profile-content-box">
-        <p class="content-placeholder">Content placeholder — posts, comments, or saved items appear here.</p>
-      </div>
-    </section>
-
-    <!-- Right: Achievements -->
-    <aside class="profile-achievements achievements-panel">
-      <h2>Achievements</h2>
-      <ul class="achievements-list">
-        <li class="achievement-item">
-          <span class="achievement-badge" aria-hidden="true"></span>
-          <span>Top 10% Commenter</span>
-        </li>
-        <li class="achievement-item">
-          <span class="achievement-badge" aria-hidden="true"></span>
-          <span>Top 10% Poster</span>
-        </li>
-        <li class="achievement-item">
-          <span class="achievement-badge" aria-hidden="true"></span>
-          <span>Top 25% Commenter</span>
-        </li>
-        <li class="achievement-item">
-          <span class="achievement-badge" aria-hidden="true"></span>
-          <span>Top 25% Poster</span>
-        </li>
-      </ul>
-    </aside>
   </main>
+  <script src="../app.js" defer></script>
 </body>
 </html>

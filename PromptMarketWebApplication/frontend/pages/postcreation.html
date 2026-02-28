@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create New Prompt — Prompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div id="navbar"></div>
+  <main class="page">
+    <div class="container" style="max-width: 720px;">
+      <h1 class="h2 mb-1">Create New Prompt</h1>
+      <p class="text-muted mb-3">Fill in the details for your new prompt.</p>
+      <div class="card">
+        <form id="createPromptForm">
+          <div class="create-form-layout">
+            <div class="create-form-thumb">
+              <p class="form-label">Upload a thumbnail</p>
+              <div class="thumbnail-box">
+                <input type="url" id="thumbnailUrl" name="thumbnailUrl" class="form-input mb-2" placeholder="Thumbnail URL (optional)">
+                <button type="button" class="btn btn-outline btn-sm btn-block" id="fakeUploadBtn">Upload</button>
+              </div>
+            </div>
+            <div class="create-form-fields">
+              <div class="form-group">
+                <label class="form-label" for="title">Title</label>
+                <input type="text" id="title" name="title" class="form-input" placeholder="Prompt title">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="description">Description</label>
+                <textarea id="description" name="description" class="form-textarea" placeholder="Short description" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="category">Category</label>
+                <select id="category" name="category" class="form-input"></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="tags">Tags</label>
+                <input type="text" id="tags" name="tags" class="form-input" placeholder="e.g. coding, debug (comma separated)">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="model">AI model</label>
+                <select id="model" name="model" class="form-input"></select>
+              </div>
+            </div>
+          </div>
+          <div class="form-group mt-3">
+            <label class="form-label" for="content">Prompt content</label>
+            <textarea id="content" name="content" class="form-textarea" placeholder="Paste or write your prompt here..." rows="6"></textarea>
+          </div>
+          <div id="createPromptMessage" class="msg" style="display: none;"></div>
+          <div style="text-align: center; margin-top: 1.25rem;">
+            <button type="submit" class="btn btn-primary">Publish</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="../app.js" defer></script>
+</body>
+</html>

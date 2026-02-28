@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comments — Prompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div id="navbar"></div>
+  <main class="page">
+    <div class="container" style="max-width: 640px;">
+      <a href="#" id="backToPrompt" class="btn btn-outline btn-sm mb-2">← Back to prompt</a>
+      <h2 class="h2 mb-2" id="commentsPromptTitle">Comments</h2>
+      <div id="commentsPageContent">
+        <div class="card mb-3">
+          <div id="commentsList"></div>
+        </div>
+        <div class="card" id="addCommentArea">
+          <h3 class="h4 mb-2">Add a comment</h3>
+          <form id="addCommentForm">
+            <div class="form-group">
+              <textarea id="commentBody" name="body" class="form-textarea" placeholder="Write a comment..." rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Post</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../app.js" defer></script>
+</body>
+</html>

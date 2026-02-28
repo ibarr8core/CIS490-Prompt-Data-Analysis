@@ -3,139 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Explore – Prompt Marketplace</title>
+  <title>Explore — Prompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/theme.css">
   <link rel="stylesheet" href="../css/components.css">
 </head>
 <body>
-  <!-- TOP NAV -->
-  <nav class="top-nav top-nav--purple">
-    <div class="nav-inner">
-      <a href="explore.html" class="brand">Prompt</a>
-      <div class="search nav-search-center">
-        <input type="search" placeholder="Search prompts..." aria-label="Search prompts">
-      </div>
-      <ul class="nav-links">
-        <li><a href="explore.html">Explore</a></li>
-        <li><a href="#">Create</a></li>
-        <li><a href="login.html">Log in</a></li>
-        <li><a href="register.html">Register</a></li>
-        <li><a href="profile.html" class="nav-avatar" aria-label="Profile"></a></li>
-      </ul>
-    </div>
-  </nav>
-
-  <!-- MAIN LAYOUT: 3 columns -->
-  <main class="page-layout-explore">
-    <!-- LEFT SIDEBAR: Filters -->
-    <aside class="explore-filters filters-sidebar">
-      <h2>Filters</h2>
-
-      <fieldset class="filter-group">
-        <legend>Model</legend>
-        <ul class="filter-radio-list">
-          <li><label><input type="radio" name="model" value="all" checked> All</label></li>
-          <li><label><input type="radio" name="model" value="chatgpt"> ChatGPT</label></li>
-          <li><label><input type="radio" name="model" value="claude"> Claude</label></li>
-          <li><label><input type="radio" name="model" value="gemini"> Gemini</label></li>
-          <li><label><input type="radio" name="model" value="sora"> Sora</label></li>
-          <li><label><input type="radio" name="model" value="cursor"> Cursor</label></li>
-          <li><label><input type="radio" name="model" value="copilot"> Copilot</label></li>
-        </ul>
-      </fieldset>
-
-      <fieldset class="filter-group">
-        <legend>Category</legend>
-        <ul class="filter-radio-list">
-          <li><label><input type="radio" name="category" value="academic"> Academic Writing</label></li>
-          <li><label><input type="radio" name="category" value="coding"> Coding & Development</label></li>
-          <li><label><input type="radio" name="category" value="study"> Study & Exam Prep</label></li>
-          <li><label><input type="radio" name="category" value="research"> Research and Analysis</label></li>
-          <li><label><input type="radio" name="category" value="design"> Design & Media</label></li>
-          <li><label><input type="radio" name="category" value="career"> Career & Professional</label></li>
-          <li><label><input type="radio" name="category" value="productivity"> Productivity & Organization</label></li>
-          <li><label><input type="radio" name="category" value="automation"> AI Automation</label></li>
-        </ul>
-      </fieldset>
-    </aside>
-
-    <!-- CENTER: Trending Prompts -->
-    <section class="explore-main">
-      <div class="prompts-header">
-        <div class="section-heading">
-          <h2>Trending Prompts</h2>
-          <span class="arrow" aria-hidden="true"></span>
+  <div id="navbar"></div>
+  <main class="page">
+    <div class="container">
+      <div class="explore-layout">
+        <aside>
+          <div class="filter-panel" id="filterModel">
+            <h3>Model</h3>
+            <div class="filter-group">
+              <label><input type="radio" name="model" value="All" checked> All</label>
+              <label><input type="radio" name="model" value="ChatGPT"> ChatGPT</label>
+              <label><input type="radio" name="model" value="Claude"> Claude</label>
+              <label><input type="radio" name="model" value="Gemini"> Gemini</label>
+              <label><input type="radio" name="model" value="Sora"> Sora</label>
+              <label><input type="radio" name="model" value="Cursor"> Cursor</label>
+              <label><input type="radio" name="model" value="Copilot"> Copilot</label>
+            </div>
+          </div>
+          <div class="filter-panel" id="filterCategory">
+            <h3>Category</h3>
+            <div class="filter-group">
+              <label><input type="radio" name="category" value="" checked> All</label>
+              <label><input type="radio" name="category" value="Academic Writing"> Academic Writing</label>
+              <label><input type="radio" name="category" value="Coding & Development"> Coding & Development</label>
+              <label><input type="radio" name="category" value="Study & Exam Prep"> Study & Exam Prep</label>
+              <label><input type="radio" name="category" value="Research and Analysis"> Research and Analysis</label>
+              <label><input type="radio" name="category" value="Design & Media"> Design & Media</label>
+              <label><input type="radio" name="category" value="Career & Professional"> Career & Professional</label>
+              <label><input type="radio" name="category" value="Productivity & Organization"> Productivity & Organization</label>
+              <label><input type="radio" name="category" value="AI Automation"> AI Automation</label>
+            </div>
+          </div>
+        </aside>
+        <div>
+          <div class="sort-wrap">
+            <label for="sortSelect">Sort by</label>
+            <select id="sortSelect">
+              <option value="trending">Trending</option>
+              <option value="new">New</option>
+              <option value="top">Top</option>
+            </select>
+          </div>
+          <h2 class="section-title">Trending Prompts</h2>
+          <div class="grid-prompts" id="explorePrompts"></div>
+          <h2 class="section-title mt-4">Most Popular Creators</h2>
+          <div class="grid-prompts" id="exploreCreators"></div>
         </div>
-        <p class="prompts-max-note">20 Prompts presented MAX</p>
       </div>
-
-      <div class="prompt-cards-grid">
-        <a href="prompt.html" class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </a>
-        <a href="prompt.html" class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </a>
-        <a href="prompt.html" class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </a>
-        <article class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </article>
-        <article class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </article>
-        <article class="prompt-card card">
-          <p class="card-placeholder">Prompt card placeholder</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- RIGHT PANEL: Most Popular Creators -->
-    <aside class="explore-right creators-panel">
-      <div class="section-heading">
-        <h2>Most Popular Creators</h2>
-        <span class="arrow" aria-hidden="true"></span>
-      </div>
-      <ul class="creators-list">
-        <li>
-          <article class="creator-card">
-            <span class="creator-avatar" aria-hidden="true"></span>
-            <div class="creator-info">
-              <p class="creator-name">Creator name</p>
-              <p class="creator-meta">Prompts · Followers</p>
-            </div>
-          </article>
-        </li>
-        <li>
-          <article class="creator-card">
-            <span class="creator-avatar" aria-hidden="true"></span>
-            <div class="creator-info">
-              <p class="creator-name">Creator name</p>
-              <p class="creator-meta">Prompts · Followers</p>
-            </div>
-          </article>
-        </li>
-        <li>
-          <article class="creator-card">
-            <span class="creator-avatar" aria-hidden="true"></span>
-            <div class="creator-info">
-              <p class="creator-name">Creator name</p>
-              <p class="creator-meta">Prompts · Followers</p>
-            </div>
-          </article>
-        </li>
-        <li>
-          <article class="creator-card">
-            <span class="creator-avatar" aria-hidden="true"></span>
-            <div class="creator-info">
-              <p class="creator-name">Creator name</p>
-              <p class="creator-meta">Prompts · Followers</p>
-            </div>
-          </article>
-        </li>
-      </ul>
-    </aside>
+    </div>
   </main>
+  <script src="../app.js" defer></script>
 </body>
 </html>
