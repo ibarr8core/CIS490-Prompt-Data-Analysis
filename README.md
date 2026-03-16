@@ -1,94 +1,133 @@
 # Prompt — AI Prompt Marketplace
 
-A **frontend-only** web app for sharing and discovering AI prompts. No backend, no database. Uses localStorage for demo data and a fake login session.
+Simple AI prompt marketplace built as a student team project.  
+Backend: Node.js + Express + MySQL. Frontend: static HTML/CSS/JS served by Express.
 
-## Tech
+---
 
-- HTML, CSS, JavaScript
-- Google Fonts (Poppins)
-- localStorage for users, prompts, comments, votes, saves, follows, reports
+## Requirements
 
-## Run locally
+- Node.js
+- MySQL (running locally)
 
-From the repo root:
+---
 
-```bash
-cd PromptMarketWebApplication
-python run_local.py
-```
+## Project Setup
 
-Or from anywhere:
+1. **Open the project folder**
+   - Open `PromptMarketWebApplication` in your editor.
 
-```bash
-python path/to/PromptMarketWebApplication/run_local.py
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Opens **http://localhost:8080/** in your browser. Stop with **Ctrl+C**.
+3. **Make sure MySQL is running**
+   - Local MySQL server must be started.
 
-Requires Python 3 (no extra packages).
+4. **Ensure MySQL credentials are:**
+   - user: `root`
+   - password: `admin`
 
-## Demo login
+5. **Start the server**
+   ```bash
+   npm start
+   ```
 
-| Role  | Username | Password   |
+---
+
+## Demo Accounts
+
+Use these accounts for quick demo/testing (local only):
+
+| Role  | Username | Password    |
 |-------|----------|------------|
 | Admin | `admin`  | `Admin123!` |
 | User  | `demo`   | `Demo123!`  |
 
-## Project structure
+---
 
-```
-PromptMarketWebApplication/
-├── run_local.py          # Serves frontend on port 8080, opens browser
-└── frontend/
-    ├── index.html        # Landing (Login, Register, Continue to Explore)
-    ├── app.js            # Navbar injection, routing, localStorage, page inits
-    ├── css/
-    │   ├── theme.css     # Variables, typography, layout, spacing
-    │   └── components.css  # Navbar, cards, forms, buttons, tabs, modals
-    └── pages/
-        ├── login.html
-        ├── register.html
-        ├── forgotpassword.html
-        ├── resetpassword.html
-        ├── explore.html      # Browse prompts, filters, sort, creators
-        ├── prompt.html       # Prompt detail, vote, save, follow, report, comments
-        ├── comments.html     # Comments for a prompt, add/delete
-        ├── postcreation.html # Create New Prompt (login required)
-        ├── profile.html      # Posts, comments, saved, upvoted, downvoted (login required)
-        ├── accountsettings.html  # Profile & password (login required)
-        └── moderation.html   # Reported prompts (admin only)
+## Running the Project
+
+- The backend server will:
+  - automatically create the `PromptMarket` database (if it does not exist)
+  - automatically create the required tables
+  - insert starter data (admin user, categories, tags, example prompt)
+  - serve the existing frontend
+
+Open this URL in your browser:
+
+```text
+http://localhost:3000
 ```
 
-## Features
+You do **not** need to run `python -m http.server` — Express serves the frontend automatically, and the database initializes on server start.
 
-- **Navbar** (injected by `app.js`): Logo, search, Explore, Create (when logged in), Login/Register or avatar dropdown.
-- **Auth** (localStorage): Login, register, forgot/reset password (demo). Session stored as `sessionUser`.
-- **Explore**: Filter by model and category, sort (Trending / New / Top), search; prompt cards and popular creators.
-- **Prompt detail**: Upvote, downvote, save, follow creator, report; comments preview and “View all comments.”
-- **Create prompt**: Title, description, category, tags, model, thumbnail URL, prompt content; validation and redirect to new prompt.
-- **Profile**: Tabs for posts, comments, saved, upvoted, downvoted; achievements panel.
-- **Account settings**: Update profile, change password, delete account (with confirm).
-- **Moderation** (admin): List reported prompts; remove prompt or ban user (demo only).
+---
 
-## Design
+## Project Structure
+
+```text
+PromptMarketWebApplication
+  frontend/            - HTML, CSS, and frontend JS
+  backend/             - Express server and API routes
+    server.js          - main server entry
+    db.js              - database connection (MySQL)
+    initDatabase.js    - database setup and seed data
+    routes/            - API route handlers (e.g., prompts)
+  package.json         - npm scripts and dependencies
+```
+
+---
+
+## Notes for Teammates
+
+- Always run commands from the `PromptMarketWebApplication` folder.
+- Standard workflow:
+  ```bash
+  npm install   # first time
+  npm start     # run the app
+  ```
+- Backend and frontend both run at `http://localhost:3000`.
+- Database and seed data are handled automatically; no manual SQL scripts are needed.
+
+---
+
+## Design System
 
 - **Header:** `#705a89`
-- **Background:** `#fbf4eb`
-- **Primary accent:** `#b3c4b5`
-- **Text:** `#2a1a1a`
-- Thin borders, pill-style primary buttons, card layout.
++- **Background:** `#fbf4eb`
++- **Primary accent:** `#b3c4b5`
++- **Text:** `#2a1a1a`
++- **Font:** Google Fonts – Poppins
 
-## Commit and push
+---
 
-From the repo root (e.g. `CIS490-Prompt-Data-Analysis`):
+## Features Overview
+
+- **Navbar** – Logo, search, Explore, Create Prompt (when logged in), Login/Register or avatar menu.
+- **Explore page** – Browse prompts with filters, sorting, and search.
+- **Prompt detail page** – View prompt content; vote, save, follow creator, report, and see comments.
+- **Create prompt page** – Form for title, description, category, tags, model, and prompt content.
+- **Profile page** – Tabs for posts, comments, saved prompts, and voting history.
+- **Account settings** – Update profile, change password, delete account (with confirmation).
+- **Moderation page** – Admin-only list of reported prompts with remove/ban actions.
+
+---
+
+## Git Workflow
+
+Basic commands for committing and syncing with the repository:
 
 ```bash
+git status
 git add .
-git commit -m "Your commit message"
+git commit -m "commit message"
 git push origin main
+git pull origin main
 ```
 
-**One-time setup** (if the remote isn’t set yet):
+One-time remote setup (if not configured yet):
 
 ```bash
 git remote add origin https://github.com/YOUR_USERNAME/CIS490-Prompt-Data-Analysis.git
@@ -96,10 +135,27 @@ git branch -M main
 git push -u origin main
 ```
 
-| Command | Purpose |
-|--------|---------|
-| `git status` | See changed and staged files |
-| `git add .` | Stage all changes |
-| `git commit -m "msg"` | Commit with a message |
-| `git push origin main` | Push to GitHub |
-| `git pull origin main` | Pull latest from GitHub |
+Use these commands to keep your local changes committed and pushed to GitHub.
+
+---
+
+## Troubleshooting
+
+- **MySQL access denied**
+  - Check that MySQL is running and the credentials match:
+    - user: `root`
+    - password: `admin`
+
+- **Port 3000 already in use**
+  - Another server is using port 3000.
+  - Close the other server/terminal using that port, then run:
+    ```bash
+    npm start
+    ```
+
+- **`npm install` failed**
+  - Delete `node_modules` (if it exists) and run:
+    ```bash
+    npm install
+    ```
+  - Make sure you have a current Node.js version installed.
