@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Prompt — Prompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div id="navbar"></div>
+  <main class="page">
+    <div class="container container-narrow" style="padding-top: 2rem;">
+      <div class="card">
+        <h2 class="h2 mb-1">Report Prompt</h2>
+        <p id="reportPromptTitle" class="text-muted mb-3"></p>
+        <div id="reportMessage" class="msg" style="display: none;"></div>
+        <form id="reportForm">
+          <div class="form-group">
+            <label class="form-label">Reason for report</label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+              <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="radio" name="reason" value="Spam" style="accent-color: var(--primary);"> Spam
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="radio" name="reason" value="Inappropriate Content" style="accent-color: var(--primary);"> Inappropriate Content
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="radio" name="reason" value="Copyright Violation" style="accent-color: var(--primary);"> Copyright Violation
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="radio" name="reason" value="Misinformation" style="accent-color: var(--primary);"> Misinformation
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="radio" name="reason" value="Other" style="accent-color: var(--primary);"> Other
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reportDetails">Additional details <span class="text-muted" style="font-weight: 400;">(optional)</span></label>
+            <textarea id="reportDetails" name="details" class="form-input form-textarea" placeholder="Describe the issue in more detail..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Submit report</button>
+        </form>
+        <p class="mt-3 text-small"><a href="#" id="backToPromptReport">Back to prompt</a></p>
+      </div>
+    </div>
+  </main>
+  <script src="../app.js" defer></script>
+</body>
+</html>
