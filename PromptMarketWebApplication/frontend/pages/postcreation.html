@@ -21,7 +21,7 @@
             <div class="create-form-thumb">
               <p class="form-label">Upload a thumbnail</p>
               <div class="thumbnail-box">
-                <input type="url" id="thumbnailUrl" name="thumbnailUrl" class="form-input mb-2" placeholder="Thumbnail URL (optional)">
+                <input type="file" id="thumbnailFile" name="thumbnailFile" class="form-input mb-2" accept="image/*">
                 <button type="button" class="btn btn-outline btn-sm btn-block" id="fakeUploadBtn">Upload</button>
               </div>
             </div>
@@ -57,6 +57,10 @@
             <button type="submit" class="btn btn-primary">Publish</button>
           </div>
         </form>
+      </div>
+      <div class="card mt-3" id="backendPromptsDemo" style="display: none;">
+        <h2 class="h3 mb-2">Latest prompts from database (demo)</h2>
+        <div id="backendPromptsList" class="prompt-list"></div>
       </div>
     </div>
   </main>

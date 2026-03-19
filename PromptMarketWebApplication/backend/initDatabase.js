@@ -81,6 +81,9 @@ async function createTables(conn) {
       model VARCHAR(100),
       author_id INT NOT NULL,
       category_id INT NULL,
+      thumbnail_url VARCHAR(255) NULL,
+      thumbnail_data LONGBLOB NULL,
+      thumbnail_mime_type VARCHAR(100) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_prompts_author
         FOREIGN KEY (author_id) REFERENCES users(id)
@@ -90,6 +93,37 @@ async function createTables(conn) {
         ON DELETE SET NULL
     )
   `);
+
+  // For existing databases where prompts table was created before thumbnail_url existed,
+  // add the column only if it is missing. This keeps initialization idempotent.
+  const [columns] = await conn.query(
+    "SHOW COLUMNS FROM prompts LIKE 'thumbnail_url'"
+  );
+  if (columns.length === 0) {
+    await conn.query(
+      'ALTER TABLE prompts ADD COLUMN thumbnail_url VARCHAR(255) NULL AFTER category_id'
+    );
+  }
+
+  // For existing databases where prompts table was created before thumbnail_data existed,
+  // add the columns only if they are missing (idempotent migration).
+  const [thumbDataColumns] = await conn.query(
+    "SHOW COLUMNS FROM prompts LIKE 'thumbnail_data'"
+  );
+  if (thumbDataColumns.length === 0) {
+    await conn.query(
+      'ALTER TABLE prompts ADD COLUMN thumbnail_data LONGBLOB NULL AFTER thumbnail_url'
+    );
+  }
+
+  const [thumbMimeColumns] = await conn.query(
+    "SHOW COLUMNS FROM prompts LIKE 'thumbnail_mime_type'"
+  );
+  if (thumbMimeColumns.length === 0) {
+    await conn.query(
+      'ALTER TABLE prompts ADD COLUMN thumbnail_mime_type VARCHAR(100) NULL AFTER thumbnail_data'
+    );
+  }
 
   // tags table
   await conn.query(`
@@ -143,25 +177,11 @@ async function seedData(conn) {
   );
 
   // Ensure there is at least one example prompt.
-  // We will assume that the first user (admin) has id = 1
-  // and that the first category (Education) has id = 1,
-  // which is true for a fresh database. If rows already exist,
-  // INSERT IGNORE keeps this safe to re-run.
-  await conn.query(
-    `INSERT IGNORE INTO prompts
-      (id, title, description, content, model, author_id, category_id)
-     VALUES
-      (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      1,
-      'Essay Helper',
-      'Helps generate essay outlines',
-      'Create a 5 paragraph essay outline about climate change',
-      'ChatGPT-4',
-      1,
-      1
-    ]
-  );
+  // Demo prompts are intentionally not inserted anymore.
+  //
+  // If your database already contains demo prompts from previous runs, do a manual cleanup:
+  //   DELETE FROM prompts;
+  // (Do not auto-run destructive SQL in code.)
 }
 
 module.exports = {

@@ -22,6 +22,10 @@
     'Productivity & Organization', 'AI Automation'
   ];
 
+  // Shared inline placeholder (avoids dependency on local image assets).
+  const THUMBNAIL_FALLBACK_SRC =
+    'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22320%22%20height%3D%22160%22%20viewBox%3D%220%200%20320%20160%22%3E%3Crect%20width%3D%22320%22%20height%3D%22160%22%20fill%3D%22%23e5e7eb%22/%3E%3Cpath%20d%3D%22M0%20120%20L80%2060%20L160%20110%20L240%2070%20L320%20120%20L320%20160%20L0%20160%20Z%22%20fill%3D%22%23cbd5e1%22/%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20fill%3D%22%239197a3%22%3ENo%20image%3C/text%3E%3C/svg%3E';
+
   // --- 1) Helpers ---
   function load(key) {
     try {
@@ -119,20 +123,6 @@
       { id: 'u2', fullName: 'Demo User', email: 'demo@prompt.demo', username: 'demo', password: 'Demo123!', role: 'user', avatarUrl: '', createdAt: new Date().toISOString() }
     ];
     save(STORAGE_KEYS.users, users);
-
-    const prompts = [
-      { id: 'p1', userId: 'u1', title: 'Essay Outline Generator', description: 'Structured academic outlines', category: 'Academic Writing', model: 'ChatGPT', content: 'Generate a detailed essay outline for the following topic...', tags: ['academic', 'essay'], createdAt: new Date(Date.now() - 86400000 * 5).toISOString(), removed: false },
-      { id: 'p2', userId: 'u2', title: 'Code Review Assistant', description: 'Get feedback on your code', category: 'Coding & Development', model: 'Claude', content: 'Review this code for style, bugs, and best practices...', tags: ['coding', 'review'], createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), removed: false },
-      { id: 'p3', userId: 'u1', title: 'Flashcard Maker', description: 'Turn notes into flashcards', category: 'Study & Exam Prep', model: 'Gemini', content: 'Convert the following notes into concise flashcards...', tags: ['study', 'flashcards'], createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), removed: false },
-      { id: 'p4', userId: 'u2', title: 'Literature Review Helper', description: 'Summarize and synthesize sources', category: 'Research and Analysis', model: 'ChatGPT', content: 'Help me write a literature review section using these sources...', tags: ['research', 'literature'], createdAt: new Date(Date.now() - 86400000 * 4).toISOString(), removed: false },
-      { id: 'p5', userId: 'u1', title: 'Logo Concept Prompts', description: 'Ideas for brand logos', category: 'Design & Media', model: 'Sora', content: 'Generate creative logo concepts for a company that...', tags: ['design', 'logo'], createdAt: new Date(Date.now() - 86400000).toISOString(), removed: false },
-      { id: 'p6', userId: 'u2', title: 'Cover Letter Writer', description: 'Tailored cover letters', category: 'Career & Professional', model: 'Claude', content: 'Write a cover letter for the following job description...', tags: ['career', 'cover letter'], createdAt: new Date().toISOString(), removed: false },
-      { id: 'p7', userId: 'u1', title: 'Meeting Notes Summarizer', description: 'Turn meetings into action items', category: 'Productivity & Organization', model: 'Copilot', content: 'Summarize this meeting transcript and list action items...', tags: ['productivity', 'meetings'], createdAt: new Date(Date.now() - 86400000 * 6).toISOString(), removed: false },
-      { id: 'p8', userId: 'u2', title: 'Email Triage Automation', description: 'Sort and draft replies', category: 'AI Automation', model: 'Cursor', content: 'Categorize these emails and draft short replies for...', tags: ['automation', 'email'], createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), removed: false },
-      { id: 'p9', userId: 'u1', title: 'Debugging Partner', description: 'Step-by-step debugging', category: 'Coding & Development', model: 'Cursor', content: 'I have this error. Walk me through debugging step by step...', tags: ['coding', 'debug'], createdAt: new Date(Date.now() - 86400000 * 1).toISOString(), removed: false },
-      { id: 'p10', userId: 'u2', title: 'Resume Bullet Improver', description: 'Stronger achievement statements', category: 'Career & Professional', model: 'ChatGPT', content: 'Improve these resume bullets to be more impact-focused...', tags: ['career', 'resume'], createdAt: new Date().toISOString(), removed: false }
-    ];
-    save(STORAGE_KEYS.prompts, prompts);
 
     const comments = [
       { id: 'c1', promptId: 'p1', userId: 'u2', body: 'Used this for my thesis outline. Very helpful!', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
@@ -533,6 +523,9 @@
         const saved = user && isSaved(user.id, p.id);
         return `
           <article class="prompt-card" data-prompt-id="${p.id}">
+            <div class="prompt-thumbnail">
+              <img src="/api/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+            </div>
             <div class="prompt-title">${escapeHtml(p.title)}</div>
             <div class="prompt-creator">${escapeHtml(p.creatorName)}</div>
             <div class="prompt-desc">${escapeHtml((p.description || '').slice(0, 100))}${(p.description || '').length > 100 ? '...' : ''}</div>
@@ -652,8 +645,17 @@
       return true;
     }
 
+    const promptIdInt = parseInt(prompt.id, 10);
+    const canDeletePrompt =
+      user &&
+      !Number.isNaN(promptIdInt) &&
+      (user.role === 'admin' || String(prompt.userId) === String(user.id));
+
     container.innerHTML = `
       <div class="card mb-3">
+        <div class="prompt-detail-thumbnail">
+          <img src="/api/prompts/${prompt.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+        </div>
         <h1 class="h2">${escapeHtml(prompt.title)}</h1>
         <p class="text-muted text-small">by ${escapeHtml(creator ? creator.username : 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
         <p>${escapeHtml(prompt.description || '')}</p>
@@ -669,6 +671,7 @@
           <button type="button" class="btn btn-outline btn-sm ${saved ? 'saved' : ''}" id="btnSave">${saved ? '★ Saved' : '☆ Save'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnFollow">${following ? 'Following' : 'Follow creator'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnReport">Report</button>
+          ${canDeletePrompt ? '<button type="button" class="btn btn-danger btn-sm" id="btnDeletePrompt">Delete Prompt</button>' : ''}
           <a href="${base}pages/explore.html" class="btn btn-outline btn-sm">Back to Explore</a>
         </div>
       </div>
@@ -738,6 +741,38 @@
       save(STORAGE_KEYS.reports, reports);
       alert('Thank you. Your report has been submitted.');
     });
+
+    // Demo-friendly authorization check: show delete button only for the prompt owner or admin.
+    // Future work: enforce ownership/admin checks on the backend too.
+    const btnDeletePrompt = document.getElementById('btnDeletePrompt');
+    if (btnDeletePrompt) {
+      btnDeletePrompt.addEventListener('click', async function () {
+        if (!confirm('Are you sure you want to delete this prompt?')) return;
+        try {
+          const res = await fetch('/api/prompts/' + promptIdInt, { method: 'DELETE' });
+          if (!res.ok) throw new Error('Delete failed with status ' + res.status);
+
+          // Keep local demo state consistent with the backend delete.
+          const promptIdStr = String(prompt.id);
+          const updatedPrompts = (load(STORAGE_KEYS.prompts) || []).filter(p => String(p.id) !== promptIdStr);
+          save(STORAGE_KEYS.prompts, updatedPrompts);
+
+          const updatedVotes = (load(STORAGE_KEYS.votes) || []).filter(v => String(v.promptId) !== promptIdStr);
+          save(STORAGE_KEYS.votes, updatedVotes);
+
+          const updatedSaves = (load(STORAGE_KEYS.saves) || []).filter(s => String(s.promptId) !== promptIdStr);
+          save(STORAGE_KEYS.saves, updatedSaves);
+
+          const updatedComments = (load(STORAGE_KEYS.comments) || []).filter(c => String(c.promptId) !== promptIdStr);
+          save(STORAGE_KEYS.comments, updatedComments);
+
+          window.location.href = base + 'pages/explore.html';
+        } catch (err) {
+          console.error('Error deleting prompt:', err.message);
+          alert('Delete failed. Please try again.');
+        }
+      });
+    }
   }
 
   function initComments() {
@@ -815,6 +850,8 @@
 
     const form = document.getElementById('createPromptForm');
     const msgEl = document.getElementById('createPromptMessage');
+    const backendDemoCard = document.getElementById('backendPromptsDemo');
+    const backendListEl = document.getElementById('backendPromptsList');
     const base = getBase();
     if (!form) return;
 
@@ -832,9 +869,50 @@
     });
 
     const fakeUpload = document.getElementById('fakeUploadBtn');
-    if (fakeUpload) fakeUpload.addEventListener('click', function () { /* UI only */ });
+    if (fakeUpload) {
+      fakeUpload.addEventListener('click', function () {
+        const fileInput = document.getElementById('thumbnailFile');
+        if (fileInput) fileInput.click();
+      });
+    }
 
-    form.addEventListener('submit', function (e) {
+    async function loadBackendPrompts() {
+      if (!backendDemoCard || !backendListEl) return;
+      try {
+        const res = await fetch('/api/prompts');
+        if (!res.ok) {
+          throw new Error('Failed to load prompts from backend.');
+        }
+        const prompts = await res.json();
+        if (!Array.isArray(prompts) || prompts.length === 0) {
+          backendListEl.innerHTML = '<p class="text-muted">No prompts found in database yet.</p>';
+          backendDemoCard.style.display = 'block';
+          return;
+        }
+        backendListEl.innerHTML = prompts.slice(0, 10).map(p => {
+          const safeTitle = escapeHtml(p.title || '');
+          const safeDesc = escapeHtml((p.description || '').slice(0, 120));
+          const imgHtml = `<div class="prompt-thumbnail"><img src="/api/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'></div>`;
+          return (
+            '<div class="prompt-card simple" data-backend-id="' + p.id + '">' +
+              '<div class="prompt-card-main">' +
+                imgHtml +
+                '<div>' +
+                  '<div class="prompt-title">' + safeTitle + '</div>' +
+                  (safeDesc ? '<div class="prompt-desc">' + safeDesc + '</div>' : '') +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+        backendDemoCard.style.display = 'block';
+      } catch (e) {
+        // For the beginner-friendly demo we simply keep the card hidden if the backend is not reachable.
+        console.error('Error loading backend prompts demo:', e.message);
+      }
+    }
+
+    form.addEventListener('submit', async function (e) {
       e.preventDefault();
       if (msgEl) { msgEl.style.display = 'none'; msgEl.className = 'msg'; }
 
@@ -843,6 +921,8 @@
       const category = form.category && form.category.value || '';
       const model = form.model && form.model.value || '';
       const content = (form.content && form.content.value || '').trim();
+      const thumbnailFile =
+        (form.thumbnailFile && form.thumbnailFile.files && form.thumbnailFile.files[0]) ? form.thumbnailFile.files[0] : null;
 
       if (!title) {
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Title is required.'; msgEl.style.display = 'block'; }
@@ -862,8 +942,12 @@
       }
 
       const tags = (form.tags && form.tags.value || '').trim().split(/[\s,]+/).filter(Boolean);
+
+      const tempPromptId = id();
+
+      // Local demo object so the rest of the existing frontend continues to work as before.
       const newPrompt = {
-        id: id(),
+        id: tempPromptId,
         userId: user.id,
         title,
         description,
@@ -871,15 +955,65 @@
         model,
         content: content || '',
         tags,
-        thumbnailUrl: (form.thumbnailUrl && form.thumbnailUrl.value || '').trim() || null,
         createdAt: new Date().toISOString(),
         removed: false
       };
+
+      // Insert into localStorage (existing behavior, kept for compatibility).
       const prompts = load(STORAGE_KEYS.prompts) || [];
       prompts.push(newPrompt);
       save(STORAGE_KEYS.prompts, prompts);
-      window.location.href = base + 'pages/prompt.html?id=' + newPrompt.id;
+
+      try {
+        // Multipart/form-data for image upload.
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('content', content || '');
+        formData.append('model', model || 'ChatGPT');
+        // For the demo we keep author_id/category_id simple (matches seeded admin user + first category).
+        formData.append('author_id', '1');
+        formData.append('category_id', '1');
+        if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
+
+        const res = await fetch('/api/prompts', { method: 'POST', body: formData });
+
+        if (!res.ok) {
+          throw new Error('Backend returned ' + res.status);
+        }
+
+        const created = await res.json();
+        // Update localStorage id to the MySQL id so other features (like thumbnail serving) work.
+        const updatedPrompts = (load(STORAGE_KEYS.prompts) || []).map(p => {
+          if (p.id !== tempPromptId) return p;
+          return { ...p, id: String(created.id) };
+        });
+        save(STORAGE_KEYS.prompts, updatedPrompts);
+
+        if (msgEl) {
+          msgEl.className = 'msg msg-success';
+          msgEl.textContent = 'Prompt created successfully and stored in the database.';
+          msgEl.style.display = 'block';
+        }
+
+        // Refresh the small backend demo list so you can see the new prompt.
+        await loadBackendPrompts();
+      } catch (err) {
+        console.error('Error creating prompt via backend:', err.message);
+        if (msgEl) {
+          msgEl.className = 'msg msg-error';
+          msgEl.textContent = 'Prompt saved locally, but there was a problem saving to the database.';
+          msgEl.style.display = 'block';
+        }
+      }
+
+      // For now, keep the user on the create page so the demo list is visible.
+      // If you prefer the old behavior, you can redirect to the prompt detail page here.
+      // window.location.href = base + 'pages/prompt.html?id=' + newPrompt.id;
     });
+
+    // Try to show existing backend prompts for the demo on page load.
+    loadBackendPrompts();
   }
 
   function initProfile() {
