@@ -207,7 +207,7 @@
     el.innerHTML = `
       <div class="navbar">
         <div class="navbar-left">
-          <a class="logo" href="${finalLogo}"><img src="${base}img/promptLogo.png" alt="Prompt" class="logo-img"></a>
+          <a class="logo" href="${finalLogo}"><img src="${base}img/csusm_logo_white.png" alt="CSUSM" class="logo-img"></a>
         </div>
         <div class="navbar-center">
           <input type="text" class="nav-search" id="navSearch" placeholder="Search prompts..." data-mode="${searchPage}">
