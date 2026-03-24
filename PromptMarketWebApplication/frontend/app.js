@@ -22,6 +22,44 @@
     'Productivity & Organization', 'AI Automation'
   ];
 
+  const SKIN_TONES = [
+    { hex: '#FDDBB4', label: 'Light' },
+    { hex: '#F1C27D', label: 'Medium Light' },
+    { hex: '#E0AC69', label: 'Medium' },
+    { hex: '#C68642', label: 'Medium Dark' },
+    { hex: '#8D5524', label: 'Dark' },
+    { hex: '#4B2E1A', label: 'Deep' }
+  ];
+
+  const EYE_COLORS = [
+    { hex: '#3a2800', label: 'Brown' },
+    { hex: '#1a5fa8', label: 'Blue' },
+    { hex: '#2d6a2d', label: 'Green' },
+    { hex: '#5a5a5a', label: 'Grey' },
+    { hex: '#8b6914', label: 'Hazel' },
+    { hex: '#cc4400', label: 'Amber' }
+  ];
+
+  const SHIRT_COLORS = [
+    { hex: '#9E9E9E', label: 'Grey' },
+    { hex: '#E8E8E8', label: 'White' },
+    { hex: '#2a2a2a', label: 'Black' },
+    { hex: '#1a3a6b', label: 'Navy' },
+    { hex: '#8B0000', label: 'Red' },
+    { hex: '#1a5c1a', label: 'Green' }
+  ];
+
+  const ACHIEVEMENTS_DEF = [
+    { id: 'free_beanie',   name: 'Starter Beanie',   desc: 'Free for all users!',              cosmetic: 'beanie',   slot: 'head', cosmeticName: 'Starter Beanie',  icon: '&#129296;', check: () => true                  },
+    { id: 'free_glasses',  name: 'Round Glasses',    desc: 'Free for all users!',              cosmetic: 'glasses',  slot: 'face', cosmeticName: 'Round Glasses',   icon: '&#128083;', check: () => true                  },
+    { id: 'first_prompt',  name: 'First Post',       desc: 'Post your first prompt',           cosmetic: 'cap',      slot: 'head', cosmeticName: 'Starter Cap',     icon: '&#127913;', check: s => s.promptCount >= 1     },
+    { id: 'first_comment', name: 'Conversationalist',desc: 'Leave your first comment',         cosmetic: 'bg_emoji', slot: 'bg',   cosmeticName: 'Emoji Rain',      icon: '&#128172;', check: s => s.commentCount >= 1    },
+    { id: 'five_prompts',  name: 'Getting Started',  desc: '5 prompts posted',                 cosmetic: 'shades',   slot: 'face', cosmeticName: 'Cool Shades',     icon: '&#128374;', check: s => s.promptCount >= 5     },
+    { id: 'first_save',    name: 'Trendsetter',      desc: 'Get a prompt saved by someone',    cosmetic: 'bg_stars', slot: 'bg',   cosmeticName: 'Star Field',      icon: '&#11088;',  check: s => s.saveCount >= 1       },
+    { id: 'ten_prompts',   name: 'Regular Creator',  desc: '10 prompts posted',                cosmetic: 'hoodie',   slot: 'body', cosmeticName: 'Creator Hoodie',  icon: '&#129405;', check: s => s.promptCount >= 10    },
+    { id: 'top_creator',   name: 'Top Creator',      desc: '25+ upvotes earned',               cosmetic: 'crown',    slot: 'head', cosmeticName: 'Gold Crown',      icon: '&#128081;', check: s => s.totalUpvotes >= 25   }
+  ];
+
   // Shared inline placeholder (avoids dependency on local image assets).
   const THUMBNAIL_FALLBACK_SRC =
     'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22320%22%20height%3D%22160%22%20viewBox%3D%220%200%20320%20160%22%3E%3Crect%20width%3D%22320%22%20height%3D%22160%22%20fill%3D%22%23e5e7eb%22/%3E%3Cpath%20d%3D%22M0%20120%20L80%2060%20L160%20110%20L240%2070%20L320%20120%20L320%20160%20L0%20160%20Z%22%20fill%3D%22%23cbd5e1%22/%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20fill%3D%22%239197a3%22%3ENo%20image%3C/text%3E%3C/svg%3E';
@@ -113,6 +151,245 @@
 
   function id() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  // --- Avatar helpers ---
+  function shadeHex(hex, amt) {
+    const c = v => Math.min(255, Math.max(0, Math.round(v)));
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return '#' + [r, g, b].map(v => c(v + amt).toString(16).padStart(2, '0')).join('');
+  }
+
+  function buildAvatarSVG(gender, skin, cosmetics, eyeColor, shirtColor) {
+    eyeColor   = eyeColor   || '#3a2800';
+    shirtColor = shirtColor || '#9E9E9E';
+
+    const sl  = shadeHex(skin,  25);
+    const sm  = shadeHex(skin,  10);
+    const sd  = shadeHex(skin, -20);
+    const sdd = shadeHex(skin, -40);
+    const lipFill = '#d4848a';
+    const lipLine = '#a85a60';
+
+    const bodyPath = gender === 'f'
+      ? 'M 40,170 L 55,155 L 75,146 L 88,140 L 88,150 L 112,150 L 112,140 L 125,146 L 145,155 L 160,170 L 160,280 L 40,280 Z'
+      : 'M 28,170 L 45,152 L 68,143 L 88,138 L 88,150 L 112,150 L 112,138 L 132,143 L 155,152 L 172,170 L 172,280 L 28,280 Z';
+    const bodyShadowPath = gender === 'f'
+      ? 'M 40,170 L 55,155 L 75,146 L 88,140 L 88,280 L 40,280 Z'
+      : 'M 28,170 L 45,152 L 68,143 L 88,138 L 88,280 L 28,280 Z';
+
+    const bodyFill   = cosmetics.includes('hoodie') ? '#16213e' : shirtColor;
+    const bodyShadow = cosmetics.includes('hoodie') ? '#0f3460' : shadeHex(shirtColor, -25);
+
+    const beanieSVG = cosmetics.includes('beanie') ? `
+      <g style="shape-rendering:crispEdges">
+        <rect x="64" y="45" width="72" height="24" rx="10" fill="#CC5500"/>
+        <rect x="68" y="36" width="64" height="17" rx="8"  fill="#CC5500"/>
+        <rect x="75" y="29" width="50" height="13" rx="7"  fill="#CC5500"/>
+        <rect x="64" y="57" width="72" height="10" rx="2"  fill="#A34400"/>
+        <line x1="82"  y1="45" x2="82"  y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
+        <line x1="93"  y1="41" x2="93"  y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
+        <line x1="100" y1="39" x2="100" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
+        <line x1="107" y1="41" x2="107" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
+        <line x1="118" y1="45" x2="118" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
+      </g>` : '';
+
+    const capSVG = cosmetics.includes('cap') ? `
+      <g style="shape-rendering:crispEdges">
+        <rect x="76" y="16" width="48" height="10" fill="#16213e"/>
+        <rect x="70" y="26" width="60" height="10" fill="#16213e"/>
+        <rect x="64" y="36" width="72" height="10" fill="#16213e"/>
+        <rect x="62" y="46" width="76" height="16" fill="#1a1a2e"/>
+        <rect x="50" y="62" width="100" height="10" fill="#0f3460"/>
+        <rect x="98" y="22" width="4" height="4" fill="#00d4aa"/>
+        <rect x="94" y="26" width="4" height="4" fill="#00d4aa"/>
+        <rect x="102" y="26" width="4" height="4" fill="#00d4aa"/>
+        <rect x="98" y="30" width="4" height="4" fill="#00d4aa"/>
+      </g>` : '';
+
+    const crownSVG = cosmetics.includes('crown') ? `
+      <g style="shape-rendering:crispEdges">
+        <rect x="64"  y="32" width="72" height="10" fill="#FFD700"/>
+        <rect x="64"  y="22" width="12" height="10" fill="#FFD700"/>
+        <rect x="67"  y="14" width="6"  height="8"  fill="#FFD700"/>
+        <rect x="94"  y="18" width="12" height="14" fill="#FFD700"/>
+        <rect x="97"  y="10" width="6"  height="8"  fill="#FFD700"/>
+        <rect x="124" y="22" width="12" height="10" fill="#FFD700"/>
+        <rect x="127" y="14" width="6"  height="8"  fill="#FFD700"/>
+        <rect x="66"  y="34" width="6"  height="6"  fill="#FF4081"/>
+        <rect x="97"  y="34" width="6"  height="6"  fill="#00BCD4"/>
+        <rect x="128" y="34" width="6"  height="6"  fill="#FF4081"/>
+      </g>` : '';
+
+    const glassesSVG = cosmetics.includes('glasses') ? `
+      <g style="shape-rendering:crispEdges">
+        <circle cx="83"  cy="91" r="13" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+        <circle cx="117" cy="91" r="13" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+        <rect x="96"  y="88" width="8"  height="3" fill="#1a1a1a" rx="1"/>
+        <rect x="52"  y="88" width="18" height="3" fill="#1a1a1a" rx="1"/>
+        <rect x="130" y="88" width="18" height="3" fill="#1a1a1a" rx="1"/>
+      </g>` : '';
+
+    const shadesSVG = cosmetics.includes('shades') ? `
+      <g>
+        <ellipse cx="83"  cy="91" rx="20" ry="12" fill="#1a1a2e" stroke="#f0f0f0" stroke-width="3"/>
+        <ellipse cx="117" cy="91" rx="20" ry="12" fill="#1a1a2e" stroke="#f0f0f0" stroke-width="3"/>
+        <rect x="103" y="88" width="14" height="5" fill="#f0f0f0"/>
+        <rect x="56"  y="88" width="8"  height="4" fill="#f0f0f0"/>
+        <rect x="136" y="88" width="8"  height="4" fill="#f0f0f0"/>
+      </g>` : '';
+
+    const hoodieSVG = cosmetics.includes('hoodie') ? `
+      <g>
+        <path d="M 82,132 Q 100,150 118,132 Q 112,152 100,156 Q 88,152 82,132 Z" fill="#0f3460"/>
+        <line x1="96"  y1="156" x2="91"  y2="192" stroke="#0d2347" stroke-width="2.5"/>
+        <line x1="104" y1="156" x2="109" y2="192" stroke="#0d2347" stroke-width="2.5"/>
+        <rect x="74" y="198" width="52" height="28" rx="4" fill="#0f3460"/>
+      </g>` : '';
+
+    return `<svg viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">
+      <path d="${bodyPath}" fill="${bodyFill}"/>
+      <path d="${bodyShadowPath}" fill="${bodyShadow}" opacity="0.4"/>
+      <rect x="88" y="132" width="24" height="18" fill="${sm}"/>
+      <polygon points="100,38 133,52 100,90"   fill="${sl}"/>
+      <polygon points="67,52 100,38 100,90"    fill="${sm}"/>
+      <polygon points="133,52 148,82 100,90"   fill="${sm}"/>
+      <polygon points="52,82 67,52 100,90"     fill="${sd}"/>
+      <polygon points="148,82 143,115 100,90"  fill="${sm}"/>
+      <polygon points="57,115 52,82 100,90"    fill="${sd}"/>
+      <polygon points="143,115 125,132 100,90" fill="${sd}"/>
+      <polygon points="75,132 57,115 100,90"   fill="${sdd}"/>
+      <polygon points="125,132 100,136 100,90" fill="${sdd}"/>
+      <polygon points="100,136 75,132 100,90"  fill="${sdd}"/>
+      <polygon points="148,82 156,90 153,108 143,115" fill="${sd}"/>
+      <rect x="73"  y="78" width="20" height="3" rx="1.5" fill="${sdd}" opacity="0.65"/>
+      <rect x="107" y="78" width="20" height="3" rx="1.5" fill="${sdd}" opacity="0.65"/>
+      <ellipse cx="83"  cy="91" rx="10" ry="7" fill="white"/>
+      <ellipse cx="117" cy="91" rx="10" ry="7" fill="white"/>
+      <ellipse cx="83"  cy="91" rx="6.5" ry="5" fill="${eyeColor}"/>
+      <ellipse cx="117" cy="91" rx="6.5" ry="5" fill="${eyeColor}"/>
+      <circle cx="83"  cy="91" r="2.5" fill="#111"/>
+      <circle cx="117" cy="91" r="2.5" fill="#111"/>
+      <circle cx="85"  cy="89" r="1.5" fill="white" opacity="0.9"/>
+      <circle cx="119" cy="89" r="1.5" fill="white" opacity="0.9"/>
+      <polygon points="100,102 96,114 104,114" fill="${sd}" opacity="0.3"/>
+      ${gender === 'f'
+        ? `<path d="M 89,122 Q 94,116 100,120 Q 106,116 111,122 Q 100,134 89,122 Z" fill="${lipFill}"/>
+           <path d="M 89,122 Q 94,116 100,120 Q 106,116 111,122" fill="none" stroke="${lipLine}" stroke-width="1.5"/>`
+        : `<path d="M 92,122 Q 96,119 100,121 Q 104,119 108,122 Q 100,130 92,122 Z" fill="${lipFill}"/>
+           <path d="M 92,122 Q 96,119 100,121 Q 104,119 108,122" fill="none" stroke="${lipLine}" stroke-width="1.5"/>`}
+      ${hoodieSVG}
+      ${beanieSVG}
+      ${capSVG}
+      ${crownSVG}
+      ${glassesSVG}
+      ${shadesSVG}
+    </svg>`;
+  }
+
+  function buildAvatarCustomizer(gender, skin, eyeColor, shirtColor) {
+    const mkSwatches = (items, activeVal, attr) =>
+      items.map(t => `<button class="skin-swatch${t.hex === activeVal ? ' active' : ''}" ${attr}="${t.hex}" style="background:${t.hex}" title="${t.label}" aria-label="${t.label}"></button>`).join('');
+
+    return `<div class="avatar-customizer">
+      <div class="customizer-section">
+        <span class="customizer-label">Body</span>
+        <div class="avatar-gender-toggle">
+          <button class="gender-btn${gender === 'm' ? ' active' : ''}" data-gender="m">&#9794; Male</button>
+          <button class="gender-btn${gender === 'f' ? ' active' : ''}" data-gender="f">&#9792; Female</button>
+        </div>
+      </div>
+      <div class="customizer-section">
+        <span class="customizer-label">Skin</span>
+        <div class="avatar-skin-swatches">${mkSwatches(SKIN_TONES, skin, 'data-skin')}</div>
+      </div>
+      <div class="customizer-section">
+        <span class="customizer-label">Eyes</span>
+        <div class="avatar-skin-swatches">${mkSwatches(EYE_COLORS, eyeColor, 'data-eye-color')}</div>
+      </div>
+      <div class="customizer-section">
+        <span class="customizer-label">Shirt</span>
+        <div class="avatar-skin-swatches">${mkSwatches(SHIRT_COLORS, shirtColor, 'data-shirt-color')}</div>
+      </div>
+    </div>`;
+  }
+
+  function buildAchievementsList(defs, unlockedIds, isOwn, equippedBySlot) {
+    equippedBySlot = equippedBySlot || {};
+    return defs.map(a => {
+      const on = unlockedIds.includes(a.id);
+      const equipped = equippedBySlot[a.slot] === a.cosmetic;
+      const equipBtn = (on && isOwn)
+        ? `<button class="equip-btn${equipped ? ' equipped' : ''}" data-equip="${a.cosmetic}" data-slot="${a.slot}">${equipped ? 'On' : 'Equip'}</button>`
+        : '';
+      return `<div class="achievement-item ${on ? 'unlocked' : 'locked'}">
+        <span class="badge${on ? '' : ' badge-locked'}">${on ? a.icon : '&#128274;'}</span>
+        <div class="achievement-info">
+          <div class="achievement-name">${a.name}</div>
+          <div class="achievement-cosmetic">${on ? a.cosmeticName : '???'}</div>
+          ${!on ? `<div class="achievement-desc">${a.desc}</div>` : ''}
+        </div>
+        ${equipBtn}
+      </div>`;
+    }).join('');
+  }
+
+  function updateAvatarSettings(userId, updates) {
+    const users = load(STORAGE_KEYS.users) || [];
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx === -1) return;
+    Object.assign(users[idx], updates);
+    save(STORAGE_KEYS.users, users);
+    const session = getSessionUser();
+    if (session && session.id === userId) setSessionUser(Object.assign({}, session, updates));
+  }
+
+  function startBgAnimation(canvas, type) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    let stopped = false, animId = null;
+
+    if (type === 'bg_emoji') {
+      const pool = ['✨','💡','🤖','💬','⭐','🎯','📝','💻','🔥','🧠','🎮','🌟','💎','🚀'];
+      const cols = Math.floor(W / 15);
+      const drops = Array.from({ length: cols }, () => Math.random() * -H);
+      const colEmoji = drops.map(() => pool[Math.floor(Math.random() * pool.length)]);
+      let tick = 0;
+      (function draw() {
+        if (stopped) return;
+        ctx.fillStyle = 'rgba(10, 18, 36, 0.14)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.font = '11px serif';
+        drops.forEach((y, i) => {
+          if (tick % 8 === i % 8) colEmoji[i] = pool[Math.floor(Math.random() * pool.length)];
+          ctx.fillText(colEmoji[i], i * 15 + 1, y);
+          drops[i] += 1.1;
+          if (drops[i] > H + 15) drops[i] = Math.random() * -40;
+        });
+        tick++;
+        animId = requestAnimationFrame(draw);
+      })();
+    } else if (type === 'bg_stars') {
+      const pool = ['⭐','✨','🌟','💫','🔆','🌙'];
+      const stars = Array.from({ length: 20 }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        vy: -(0.3 + Math.random() * 0.4),
+        e: pool[Math.floor(Math.random() * pool.length)]
+      }));
+      (function draw() {
+        if (stopped) return;
+        ctx.clearRect(0, 0, W, H);
+        ctx.font = '11px serif';
+        stars.forEach(s => {
+          ctx.fillText(s.e, s.x, s.y);
+          s.y += s.vy;
+          if (s.y < -15) { s.y = H + 10; s.x = Math.random() * W; s.e = pool[Math.floor(Math.random() * pool.length)]; }
+        });
+        animId = requestAnimationFrame(draw);
+      })();
+    }
+
+    return { stop() { stopped = true; if (animId) cancelAnimationFrame(animId); } };
   }
 
   // --- 2) Seed demo data ---
@@ -1112,6 +1389,92 @@
     renderPromptList(mySaved, savedContainer);
     renderPromptList(myUpvoted, upvotedContainer);
     renderPromptList(myDownvoted, downvotedContainer);
+
+    // --- Avatar & Achievements ---
+    const profilePromptIds = new Set(myPrompts.map(p => p.id));
+    const totalUpvotes  = votes.filter(v => profilePromptIds.has(v.promptId) && v.vote === 1).length;
+    const receivedSaves = saves.filter(s => profilePromptIds.has(s.promptId)).length;
+    const avatarStats   = { promptCount: myPrompts.length, totalUpvotes, commentCount: myComments.length, saveCount: receivedSaves };
+    const unlockedIds      = ACHIEVEMENTS_DEF.filter(a => a.check(avatarStats)).map(a => a.id);
+    const unlockedCosmetics = ACHIEVEMENTS_DEF.filter(a => unlockedIds.includes(a.id)).map(a => a.cosmetic);
+
+    const avatarEl       = document.getElementById('avatarDisplay');
+    const customizerEl   = document.getElementById('avatarCustomizer');
+    const achievementsEl = document.getElementById('achievementsList');
+    let bgHandle = null;
+
+    function getSlots() {
+      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
+      return {
+        head: u.equippedHead !== undefined ? u.equippedHead : 'beanie',
+        face: u.equippedFace !== undefined ? u.equippedFace : 'glasses',
+        body: u.equippedBody || null,
+        bg:   u.equippedBg   || null
+      };
+    }
+
+    function rerenderAvatar() {
+      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
+      const slots = getSlots();
+      const dc = [slots.head, slots.face, slots.body].filter(c => c && unlockedCosmetics.includes(c));
+      if (bgHandle) { bgHandle.stop(); bgHandle = null; }
+      if (!avatarEl) return;
+      avatarEl.innerHTML = buildAvatarSVG(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', dc, u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
+      if (slots.bg && unlockedCosmetics.includes(slots.bg)) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'avatar-bg-canvas';
+        canvas.width = 148; canvas.height = 207;
+        avatarEl.insertBefore(canvas, avatarEl.firstChild);
+        bgHandle = startBgAnimation(canvas, slots.bg);
+      }
+    }
+
+    function rerenderAchievements() {
+      if (achievementsEl) achievementsEl.innerHTML = buildAchievementsList(ACHIEVEMENTS_DEF, unlockedIds, isOwn, getSlots());
+    }
+
+    rerenderAvatar();
+    rerenderAchievements();
+
+    if (isOwn && customizerEl) {
+      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
+      customizerEl.innerHTML = buildAvatarCustomizer(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
+      customizerEl.addEventListener('click', e => {
+        const gBtn  = e.target.closest('[data-gender]');
+        const sBtn  = e.target.closest('[data-skin]');
+        const ecBtn = e.target.closest('[data-eye-color]');
+        const scBtn = e.target.closest('[data-shirt-color]');
+        if (!gBtn && !sBtn && !ecBtn && !scBtn) return;
+        const updates = {};
+        if (gBtn)  updates.avatarGender     = gBtn.dataset.gender;
+        if (sBtn)  updates.avatarSkin       = sBtn.dataset.skin;
+        if (ecBtn) updates.avatarEyeColor   = ecBtn.dataset.eyeColor;
+        if (scBtn) updates.avatarShirtColor = scBtn.dataset.shirtColor;
+        updateAvatarSettings(profileUserId, updates);
+        if (gBtn)  customizerEl.querySelectorAll('[data-gender]').forEach(b => b.classList.toggle('active', b.dataset.gender === updates.avatarGender));
+        if (sBtn)  customizerEl.querySelectorAll('[data-skin]').forEach(b => b.classList.toggle('active', b.dataset.skin === updates.avatarSkin));
+        if (ecBtn) customizerEl.querySelectorAll('[data-eye-color]').forEach(b => b.classList.toggle('active', b.dataset.eyeColor === updates.avatarEyeColor));
+        if (scBtn) customizerEl.querySelectorAll('[data-shirt-color]').forEach(b => b.classList.toggle('active', b.dataset.shirtColor === updates.avatarShirtColor));
+        rerenderAvatar();
+      });
+    }
+
+    if (isOwn && achievementsEl) {
+      achievementsEl.addEventListener('click', e => {
+        const btn = e.target.closest('[data-equip]');
+        if (!btn) return;
+        const cosmetic = btn.dataset.equip;
+        const slot = btn.dataset.slot;
+        if (!unlockedCosmetics.includes(cosmetic)) return;
+        const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId);
+        if (!u) return;
+        const slotKey = 'equipped' + slot.charAt(0).toUpperCase() + slot.slice(1);
+        updateAvatarSettings(profileUserId, { [slotKey]: u[slotKey] === cosmetic ? null : cosmetic });
+        rerenderAvatar();
+        rerenderAchievements();
+      });
+    }
+
     showTab('posts');
   }
 

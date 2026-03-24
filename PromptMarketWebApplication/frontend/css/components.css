@@ -461,40 +461,188 @@
   background: var(--surface);
   border: 1px solid rgba(0, 46, 90, 0.08);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
+  padding: 0;
+  overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
 .achievements-panel h3 {
   font-family: 'Raleway', sans-serif;
   font-size: 1rem;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.6rem;
+  padding: 0.9rem 1.25rem 0;
   color: var(--primary);
   font-weight: 700;
 }
+#achievementsList { padding: 0 1.25rem 1rem; }
+
+/* Avatar display */
+.avatar-display {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 1.25rem 1rem 0.5rem;
+  background: linear-gradient(175deg, #dce6f0 0%, #EEF3F9 100%);
+  border-bottom: 1px solid rgba(0, 46, 90, 0.08);
+}
+.avatar-svg {
+  width: 148px;
+  height: 207px;
+  filter: drop-shadow(0 6px 16px rgba(0, 46, 90, 0.18));
+}
+
+
+.avatar-gender-toggle {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.gender-btn {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid rgba(0, 46, 90, 0.18);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--muted);
+  font-family: inherit;
+}
+.gender-btn.active {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: #fff;
+}
+.gender-btn:hover:not(.active) { background: var(--surface-2); }
+.avatar-skin-swatches {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.skin-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0;
+  outline: none;
+}
+.skin-swatch:hover { transform: scale(1.18); }
+.skin-swatch.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Achievement items */
 .achievement-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.6rem 0;
-  font-size: 0.9rem;
+  padding: 0.55rem 0;
   border-bottom: 1px solid rgba(0, 46, 90, 0.06);
   transition: var(--transition);
 }
 .achievement-item:last-child { border-bottom: none; }
-.achievement-item:hover { color: var(--secondary); }
+.achievement-item.unlocked:hover { color: var(--secondary); }
+.achievement-item.locked { opacity: 1; }
 .achievement-item .badge {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--secondary), var(--accent));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  color: #fff;
+  font-size: 1rem;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(0, 98, 165, 0.25);
 }
+.badge-locked {
+  background: #c8c8c8 !important;
+  box-shadow: none !important;
+  font-size: 0.85rem !important;
+  color: #888;
+}
+.achievement-info { flex: 1; min-width: 0; }
+.achievement-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1.2;
+}
+.achievement-cosmetic {
+  font-size: 0.73rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+.achievement-desc {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  font-style: italic;
+}
+.achievement-check {
+  color: #2E7D32;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Avatar customizer sections */
+.avatar-customizer { padding: 0; }
+.customizer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 46, 90, 0.06);
+}
+.customizer-section:last-child { border-bottom: none; }
+.customizer-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+/* Equip / unequip button */
+.equip-btn {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--secondary);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.equip-btn.equipped {
+  background: var(--secondary);
+  color: #fff;
+}
+.equip-btn:hover { opacity: 0.75; }
+
+/* Animated background canvas */
+.avatar-display { position: relative; }
+.avatar-bg-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 148px;
+  height: 207px;
+  border-radius: var(--radius);
+  z-index: 0;
+  pointer-events: none;
+}
+.avatar-svg { position: relative; z-index: 1; }
 
 /* ============================================
    MESSAGE BOXES
