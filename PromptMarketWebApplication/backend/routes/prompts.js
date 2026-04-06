@@ -93,12 +93,17 @@ function normalizePromptRow(row) {
 
 router.get('/', async (req, res) => {
   try {
-    console.log("Fetching prompts...");
+    console.log("Step 1: /api/prompts route hit");
+    console.log("Step 2: querying prompts table");
     const [rows] = await pool.query("SELECT * FROM prompts");
     res.json(rows);
   } catch (err) {
     console.error("PROMPTS ERROR FULL:", err);
-    res.status(500).json({ error: 'Failed to fetch prompts.' });
+    res.status(500).json({
+      error: "Failed to fetch prompts.",
+      details: err.message,
+      code: err.code || null
+    });
   }
 });
 
