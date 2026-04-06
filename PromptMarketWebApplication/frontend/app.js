@@ -14,6 +14,7 @@
     reports: 'reports',
     resetToken: 'resetToken'
   };
+  const API_BASE = '/api';
 
   const MODELS = ['All', 'ChatGPT', 'Claude', 'Gemini', 'Sora', 'Cursor', 'Copilot'];
   const CATEGORIES = [
@@ -93,12 +94,25 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || '').trim());
   }
 
+  function getPasswordIssues(pw) {
+    const issues = [];
+    const value = pw || '';
+    if (!value || value.length < 8) issues.push('at least 8 characters');
+    if (!/[A-Z]/.test(value)) issues.push('one uppercase letter');
+    if (!/[0-9]/.test(value)) issues.push('one number');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) issues.push('one special character');
+    return issues;
+  }
+
+  function getPasswordErrorText(pw) {
+    const issues = getPasswordIssues(pw);
+    if (!issues.length) return 'Password does not meet the required format.';
+    if (issues.length === 1) return 'Password must include: ' + issues[0] + '.';
+    return 'Password must include: ' + issues.slice(0, -1).join(', ') + ' and ' + issues[issues.length - 1] + '.';
+  }
+
   function validatePassword(pw) {
-    if (!pw || pw.length < 8) return false;
-    if (!/[A-Z]/.test(pw)) return false;
-    if (!/[0-9]/.test(pw)) return false;
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) return false;
-    return true;
+    return getPasswordIssues(pw).length === 0;
   }
 
   function getSessionUser() {
@@ -151,6 +165,30 @@
 
   function id() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  async function apiFetchJson(path, options) {
+    const res = await fetch(API_BASE + path, options);
+    if (!res.ok) {
+      throw new Error('Request failed: ' + res.status);
+    }
+    return res.json();
+  }
+
+  function mapBackendPromptToLocal(prompt) {
+    return {
+      id: String(prompt.id),
+      userId: String(prompt.author_id),
+      title: prompt.title || '',
+      description: prompt.description || '',
+      category: prompt.category_name || '',
+      model: prompt.model || 'ChatGPT',
+      content: prompt.content || '',
+      tags: Array.isArray(prompt.tags) ? prompt.tags.map(t => t.name) : [],
+      createdAt: prompt.created_at || new Date().toISOString(),
+      removed: false,
+      creatorName: prompt.author_username || 'Unknown'
+    };
   }
 
   // --- Avatar helpers ---
@@ -589,7 +627,7 @@
         commentCount,
         saveCount,
         engagement,
-        creatorName: creator ? (creator.username || creator.fullName) : 'Unknown'
+        creatorName: p.creatorName || (creator ? (creator.username || creator.fullName) : 'Unknown')
       };
     });
 
@@ -642,7 +680,7 @@
     if (forgotLink) forgotLink.href = base + 'pages/forgotpassword.html';
     if (registerLink) registerLink.href = base + 'pages/register.html';
 
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const emailOrUser = (form.emailOrUsername && form.emailOrUsername.value || '').trim();
       const password = (form.password && form.password.value || '').trim();
@@ -655,21 +693,23 @@
         if (msg) { msg.textContent = 'Please enter your password.'; msg.style.display = 'block'; }
         return;
       }
-      const users = load(STORAGE_KEYS.users) || [];
-      const user = users.find(u =>
-        (u.email && u.email.toLowerCase() === emailOrUser.toLowerCase()) ||
-        (u.username && u.username.toLowerCase() === emailOrUser.toLowerCase())
-      );
-      if (!user || user.password !== password) {
+      try {
+        const apiUser = await apiFetchJson('/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emailOrUsername: emailOrUser, password })
+        });
+        setSessionUser({
+          id: String(apiUser.id),
+          username: apiUser.username,
+          fullName: apiUser.username,
+          email: apiUser.email,
+          role: apiUser.role
+        });
+        window.location.href = base + 'pages/explore.html';
+      } catch (_) {
         if (msg) { msg.textContent = 'Invalid email/username or password.'; msg.style.display = 'block'; }
-        return;
       }
-      if (user.banned) {
-        if (msg) { msg.textContent = 'This account has been suspended.'; msg.style.display = 'block'; }
-        return;
-      }
-      setSessionUser({ id: user.id, username: user.username, fullName: user.fullName, email: user.email, role: user.role });
-      window.location.href = base + 'pages/explore.html';
     });
   }
 
@@ -681,7 +721,7 @@
     const loginLink = document.getElementById('loginLinkRegister');
     if (loginLink) loginLink.href = base + 'pages/login.html';
 
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
       e.preventDefault();
       const fullName = (form.fullName && form.fullName.value || '').trim();
       const email = (form.email && form.email.value || '').trim();
@@ -694,33 +734,34 @@
       if (!email) { if (msg) { msg.textContent = 'Please enter your email.'; msg.style.display = 'block'; } return; }
       if (!validateEmail(email)) { if (msg) { msg.textContent = 'Please enter a valid email address.'; msg.style.display = 'block'; } return; }
       if (!username) { if (msg) { msg.textContent = 'Please enter a username.'; msg.style.display = 'block'; } return; }
-      if (!validatePassword(password)) { if (msg) { msg.textContent = 'Password must be at least 8 characters with uppercase, number, and special character.'; msg.style.display = 'block'; } return; }
+      if (!validatePassword(password)) {
+        if (msg) { msg.textContent = getPasswordErrorText(password); msg.style.display = 'block'; }
+        return;
+      }
       if (password !== verify) { if (msg) { msg.textContent = 'Passwords do not match.'; msg.style.display = 'block'; } return; }
 
-      const users = load(STORAGE_KEYS.users) || [];
-      if (users.some(u => (u.email || '').toLowerCase() === email.toLowerCase())) {
-        if (msg) { msg.textContent = 'An account with this email already exists.'; msg.style.display = 'block'; }
-        return;
+      try {
+        const newUser = await apiFetchJson('/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        setSessionUser({
+          id: String(newUser.id),
+          username: newUser.username,
+          fullName,
+          email: newUser.email,
+          role: newUser.role
+        });
+        window.location.href = base + 'pages/explore.html';
+      } catch (err) {
+        if (msg) {
+          msg.textContent = err.message && err.message.includes('409')
+            ? 'Username or email already exists.'
+            : 'Registration failed. Please try again.';
+          msg.style.display = 'block';
+        }
       }
-      if (users.some(u => (u.username || '').toLowerCase() === username.toLowerCase())) {
-        if (msg) { msg.textContent = 'This username is already taken.'; msg.style.display = 'block'; }
-        return;
-      }
-
-      const newUser = {
-        id: id(),
-        fullName,
-        email,
-        username,
-        password,
-        role: 'user',
-        avatarUrl: '',
-        createdAt: new Date().toISOString()
-      };
-      users.push(newUser);
-      save(STORAGE_KEYS.users, users);
-      setSessionUser({ id: newUser.id, username: newUser.username, fullName: newUser.fullName, email: newUser.email, role: newUser.role });
-      window.location.href = base + 'pages/explore.html';
     });
   }
 
@@ -770,7 +811,7 @@
       const newPw = form.newPassword && form.newPassword.value || '';
       const verify = form.verify && form.verify.value || '';
       if (!validatePassword(newPw)) {
-        if (msg) { msg.className = 'msg msg-error'; msg.textContent = 'Password must be at least 8 characters with uppercase, number, and special character.'; msg.style.display = 'block'; }
+        if (msg) { msg.className = 'msg msg-error'; msg.textContent = getPasswordErrorText(newPw); msg.style.display = 'block'; }
         return;
       }
       if (newPw !== verify) {
@@ -792,7 +833,19 @@
     const sortSelect = document.getElementById('sortSelect');
     const navSearch = document.getElementById('navSearch');
 
-    function renderPrompts(opts) {
+    async function refreshPromptsFromBackend(opts) {
+      try {
+        const params = new URLSearchParams();
+        if (opts && opts.query) params.set('q', opts.query);
+        const backendPrompts = await apiFetchJson('/prompts' + (params.toString() ? '?' + params.toString() : ''));
+        save(STORAGE_KEYS.prompts, (backendPrompts || []).map(mapBackendPromptToLocal));
+      } catch (e) {
+        console.error('Error loading prompts from backend:', e.message);
+      }
+    }
+
+    async function renderPrompts(opts) {
+      await refreshPromptsFromBackend(opts);
       const list = getPromptsFiltered(opts);
       const user = getSessionUser();
       if (!container) return;
@@ -872,10 +925,10 @@
       `).join('');
     }
 
-    if (filterModel) filterModel.addEventListener('change', () => renderPrompts(getExploreOpts()));
-    if (filterCategory) filterCategory.addEventListener('change', () => renderPrompts(getExploreOpts()));
-    if (sortSelect) sortSelect.addEventListener('change', () => renderPrompts(getExploreOpts()));
-    if (navSearch) navSearch.addEventListener('search', function (e) { renderPrompts(getExploreOpts()); });
+    if (filterModel) filterModel.addEventListener('change', () => { renderPrompts(getExploreOpts()); });
+    if (filterCategory) filterCategory.addEventListener('change', () => { renderPrompts(getExploreOpts()); });
+    if (sortSelect) sortSelect.addEventListener('change', () => { renderPrompts(getExploreOpts()); });
+    if (navSearch) navSearch.addEventListener('search', function () { renderPrompts(getExploreOpts()); });
 
     const initialQ = new URLSearchParams(window.location.search).get('q');
     if (navSearch && initialQ) navSearch.value = initialQ;
@@ -888,16 +941,28 @@
     return div.innerHTML;
   }
 
-  function initPrompt() {
+  async function initPrompt() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const base = getBase();
     const user = getSessionUser();
     const prompts = load(STORAGE_KEYS.prompts) || [];
-    const prompt = prompts.find(p => p.id === id && !p.removed);
+    let prompt = prompts.find(p => p.id === id && !p.removed);
     const container = document.getElementById('promptDetail');
     const backBtn = document.getElementById('backToExplore');
     if (backBtn) backBtn.href = base + 'pages/explore.html';
+
+    if (!prompt) {
+      try {
+        const backendPrompt = await apiFetchJson('/prompts/' + encodeURIComponent(id));
+        prompt = mapBackendPromptToLocal(backendPrompt);
+        const updatedPrompts = (load(STORAGE_KEYS.prompts) || []).filter(p => p.id !== prompt.id);
+        updatedPrompts.push(prompt);
+        save(STORAGE_KEYS.prompts, updatedPrompts);
+      } catch (_) {
+        // Fallback to existing behavior below.
+      }
+    }
 
     if (!prompt || !container) {
       if (container) container.innerHTML = '<p class="msg msg-error">Prompt not found.</p>';
@@ -934,7 +999,7 @@
           <img src="/api/prompts/${prompt.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
         </div>
         <h1 class="h2">${escapeHtml(prompt.title)}</h1>
-        <p class="text-muted text-small">by ${escapeHtml(creator ? creator.username : 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
+        <p class="text-muted text-small">by ${escapeHtml((creator && creator.username) || prompt.creatorName || 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
         <p>${escapeHtml(prompt.description || '')}</p>
         <div class="prompt-stats mb-2">
           <span class="stat-chip">↑ ${(score > 0 ? score : 0)}</span>
@@ -948,6 +1013,7 @@
           <button type="button" class="btn btn-outline btn-sm ${saved ? 'saved' : ''}" id="btnSave">${saved ? '★ Saved' : '☆ Save'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnFollow">${following ? 'Following' : 'Follow creator'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnReport">Report</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnCopyPrompt">Copy Prompt</button>
           ${canDeletePrompt ? '<button type="button" class="btn btn-danger btn-sm" id="btnDeletePrompt">Delete Prompt</button>' : ''}
           <a href="${base}pages/explore.html" class="btn btn-outline btn-sm">Back to Explore</a>
         </div>
@@ -976,6 +1042,7 @@
     const btnSave = document.getElementById('btnSave');
     const btnFollow = document.getElementById('btnFollow');
     const btnReport = document.getElementById('btnReport');
+    const btnCopyPrompt = document.getElementById('btnCopyPrompt');
 
     function applyVote(vote) {
       if (!requireLogin('Login required to vote.')) return;
@@ -1018,6 +1085,36 @@
       save(STORAGE_KEYS.reports, reports);
       alert('Thank you. Your report has been submitted.');
     });
+
+    if (btnCopyPrompt) {
+      btnCopyPrompt.addEventListener('click', async function () {
+        const text = (prompt.title ? 'Title: ' + prompt.title + '\\n\\n' : '') + (prompt.content || '');
+        if (!text.trim()) {
+          alert('Nothing to copy for this prompt.');
+          return;
+        }
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          alert('Prompt copied to clipboard.');
+        } catch (err) {
+          console.error('Copy failed:', err && err.message ? err.message : err);
+          alert('Could not copy the prompt. Please try again.');
+        }
+      });
+    }
 
     // Demo-friendly authorization check: show delete button only for the prompt owner or admin.
     // Future work: enforce ownership/admin checks on the backend too.
@@ -1132,12 +1229,25 @@
     const base = getBase();
     if (!form) return;
 
-    CATEGORIES.forEach(cat => {
-      const opt = document.createElement('option');
-      opt.value = cat;
-      opt.textContent = cat;
-      if (form.category) form.category.appendChild(opt);
-    });
+    apiFetchJson('/categories')
+      .then(function (rows) {
+        if (!form.category) return;
+        form.category.innerHTML = '<option value="">Choose category</option>';
+        (rows || []).forEach(function (cat) {
+          const opt = document.createElement('option');
+          opt.value = String(cat.id);
+          opt.textContent = cat.name;
+          form.category.appendChild(opt);
+        });
+      })
+      .catch(function () {
+        CATEGORIES.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat;
+          opt.textContent = cat;
+          if (form.category) form.category.appendChild(opt);
+        });
+      });
     MODELS.filter(m => m !== 'All').forEach(m => {
       const opt = document.createElement('option');
       opt.value = m;
@@ -1196,6 +1306,9 @@
       const title = (form.title && form.title.value || '').trim();
       const description = (form.description && form.description.value || '').trim();
       const category = form.category && form.category.value || '';
+      const categoryLabel = form.category && form.category.options && form.category.selectedIndex >= 0
+        ? form.category.options[form.category.selectedIndex].text
+        : category;
       const model = form.model && form.model.value || '';
       const content = (form.content && form.content.value || '').trim();
       const thumbnailFile =
@@ -1228,7 +1341,7 @@
         userId: user.id,
         title,
         description,
-        category,
+        category: categoryLabel,
         model,
         content: content || '',
         tags,
@@ -1248,9 +1361,13 @@
         formData.append('description', description);
         formData.append('content', content || '');
         formData.append('model', model || 'ChatGPT');
-        // For the demo we keep author_id/category_id simple (matches seeded admin user + first category).
-        formData.append('author_id', '1');
-        formData.append('category_id', '1');
+        formData.append('author_id', String(parseInt(user.id, 10) || 1));
+        if (/^\d+$/.test(category)) {
+          formData.append('category_id', category);
+        }
+        if (tags.length) {
+          formData.append('tags', tags.join(','));
+        }
         if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
 
         const res = await fetch('/api/prompts', { method: 'POST', body: formData });
@@ -1523,7 +1640,7 @@
         const newPw = pwForm.newPassword && pwForm.newPassword.value || '';
         const verify = pwForm.verifyPassword && pwForm.verifyPassword.value || '';
         if (fullUser.password !== current) { alert('Current password is incorrect.'); return; }
-        if (!validatePassword(newPw)) { alert('New password must meet requirements.'); return; }
+        if (!validatePassword(newPw)) { alert(getPasswordErrorText(newPw)); return; }
         if (newPw !== verify) { alert('New passwords do not match.'); return; }
         fullUser.password = newPw;
         const users = load(STORAGE_KEYS.users) || [];

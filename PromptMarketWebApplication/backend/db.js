@@ -1,23 +1,46 @@
 // backend/db.js
-// Simple MySQL connection pool using mysql2/promise.
-// This assumes the PromptMarket database already exists.
-// The initializeDatabase function in initDatabase.js will
-// create the database and tables before the server starts.
+// MySQL connection pool (mysql2/promise). Config from environment variables.
 
 const mysql = require('mysql2/promise');
 
-// Create a reusable connection pool for the application.
-// Connection settings are exactly as requested.
-const pool = mysql.createPool({
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: 'admin',
-  database: 'PromptMarket',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+function buildPoolConfig() {
+  const user = process.env.DB_USER;
+  const password = process.env.DB_PASSWORD;
+  const database = process.env.DB_NAME;
+
+  const poolBase = {
+    user,
+    password,
+    database,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  };
+
+  if (process.env.INSTANCE_UNIX_SOCKET) {
+    return {
+      ...poolBase,
+      socketPath: process.env.INSTANCE_UNIX_SOCKET
+    };
+  }
+
+  return {
+    ...poolBase,
+    host: '127.0.0.1',
+    port: 9470
+  };
+}
+
+const pool = mysql.createPool(buildPoolConfig());
+
+pool
+  .getConnection()
+  .then((conn) => {
+    conn.release();
+    console.log('[DB] Connection pool ready');
+  })
+  .catch((err) => {
+    console.error('[DB] Connection pool check failed:', err.message || err);
+  });
 
 module.exports = pool;
-

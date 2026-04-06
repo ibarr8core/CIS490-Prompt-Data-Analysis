@@ -9,29 +9,48 @@
 
 const mysql = require('mysql2/promise');
 
-// Raw connection settings (without specifying database)
-// Uses the shared MySQL credentials for this project.
-const CONNECTION_CONFIG = {
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: 'admin',
-  multipleStatements: true
-};
+const DATABASE_NAME = process.env.DB_NAME;
+
+function buildInitConnectionConfig() {
+  const base = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    multipleStatements: true
+  };
+  if (process.env.INSTANCE_UNIX_SOCKET) {
+    return {
+      ...base,
+      socketPath: process.env.INSTANCE_UNIX_SOCKET
+    };
+  }
+  return {
+    ...base,
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: Number(process.env.DB_PORT || 9470)
+  };
+}
 
 async function initializeDatabase() {
+  if (!process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+    console.error(
+      '[DB] Skipping initialization: DB_USER, DB_PASSWORD, and DB_NAME must be set'
+    );
+    return;
+  }
+
   let connection;
   try {
     // Connect without database first so we can create it if missing
-    connection = await mysql.createConnection(CONNECTION_CONFIG);
+    connection = await mysql.createConnection(buildInitConnectionConfig());
+    await connection.query('SELECT 1');
 
     // Create database if it does not exist
     await connection.query(
-      'CREATE DATABASE IF NOT EXISTS `PromptMarket` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+      `CREATE DATABASE IF NOT EXISTS \`${DATABASE_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     );
 
-    // Switch to the PromptMarket database
-    await connection.changeUser({ database: 'PromptMarket' });
+    // Switch to the configured database
+    await connection.changeUser({ database: DATABASE_NAME });
 
     // Create tables in the correct order for foreign keys
     await createTables(connection);

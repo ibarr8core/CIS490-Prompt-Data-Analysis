@@ -1,52 +1,52 @@
 // backend/server.js
 // Main Express server for the Prompt Marketplace project.
-// - Runs database initialization on startup
-// - Serves the existing frontend as static files
-// - Exposes /api/prompts endpoints for basic prompt operations
+// - Serves the existing frontend as static files (except GET /)
+// - Exposes /api/* endpoints
+// - Database initialization runs after listen (non-blocking); failures are logged only
 
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { initializeDatabase } = require('./initDatabase');
 const promptsRouter = require('./routes/prompts');
+const usersRouter = require('./routes/users');
+const categoriesRouter = require('./routes/categories');
+const tagsRouter = require('./routes/tags');
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 3000;
 
-// Enable JSON body parsing for API endpoints
+console.log('[startup] PromptMarket server loading...');
+console.log('[startup] NODE_ENV:', process.env.NODE_ENV || '(not set)');
+console.log('[startup] PORT from env:', process.env.PORT !== undefined ? process.env.PORT : '(unset, using default)');
+console.log('[startup] Listening on port:', port);
+
 app.use(express.json());
-
-// Enable CORS for local development
 app.use(cors());
 
-// Serve the existing frontend folder as static files
+app.use('/api/prompts', promptsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/tags', tagsRouter);
+
+app.get('/', (req, res) => {
+  res.send('PromptMarket API is running');
+});
+
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));
 
-// API routes for prompts, mounted under /api/prompts
-app.use('/api/prompts', promptsRouter);
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 
-// Ensure http://localhost:3000 loads the main page.
-// We send the existing frontend/index.html file.
-app.get('/', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// Start the server only after database initialization has run successfully.
-// If initialization fails, we log the error and exit so the app does not
-// continue running in a bad state.
-(async () => {
-  try {
-    console.log('Initializing database...');
-    await initializeDatabase();
-    console.log('Database initialization complete.');
-
-    app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
+  initializeDatabase()
+    .then(() => {
+      console.log('[DB] Database initialization complete.');
+    })
+    .catch((err) => {
+      console.error('[DB] Database initialization failed:', err && err.message ? err.message : err);
+      if (err && err.stack) {
+        console.error('[DB]', err.stack);
+      }
     });
-  } catch (err) {
-    console.error('Error during database initialization:', err.message);
-    process.exit(1);
-  }
-})();
-
+});
