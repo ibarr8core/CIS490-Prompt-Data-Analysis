@@ -1,5 +1,5 @@
 // backend/db.js
-// MySQL connection pool (mysql2/promise). Config from environment variables.
+// MySQL connection pool (mysql2/promise). Lazy: no connection is opened at import time.
 
 const mysql = require('mysql2/promise');
 
@@ -26,21 +26,11 @@ function buildPoolConfig() {
 
   return {
     ...poolBase,
-    host: '127.0.0.1',
-    port: 9470
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: Number(process.env.DB_PORT || 9470)
   };
 }
 
 const pool = mysql.createPool(buildPoolConfig());
-
-pool
-  .getConnection()
-  .then((conn) => {
-    conn.release();
-    console.log('[DB] Connection pool ready');
-  })
-  .catch((err) => {
-    console.error('[DB] Connection pool check failed:', err.message || err);
-  });
 
 module.exports = pool;
