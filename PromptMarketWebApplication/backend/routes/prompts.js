@@ -146,7 +146,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows.map(normalizePromptRow));
   } catch (err) {
-    console.error('Error fetching prompts:', err.message);
+    console.error('PROMPTS ERROR FULL:', err);
     res.status(500).json({ error: 'Failed to fetch prompts.' });
   }
 });
