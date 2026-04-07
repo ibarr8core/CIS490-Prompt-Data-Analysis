@@ -181,7 +181,35 @@
     return res.json();
   }
 
+  function escapeHtmlAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;');
+  }
+
+  /**
+   * Thumbnail display: prefer remote URL; else MySQL blob via API; else placeholder.
+   * thumbnail_mime_type is informational (server sets Content-Type on blob route).
+   */
+  function getPromptThumbnailSrc(p) {
+    if (!p) return THUMBNAIL_FALLBACK_SRC;
+    const url = (p.thumbnail_url != null && p.thumbnail_url !== '')
+      ? String(p.thumbnail_url).trim()
+      : '';
+    if (url) return url;
+    const idStr = p.id != null ? String(p.id).trim() : '';
+    if (idStr && /^\d+$/.test(idStr)) {
+      return API_BASE + '/prompts/' + encodeURIComponent(idStr) + '/thumbnail';
+    }
+    return THUMBNAIL_FALLBACK_SRC;
+  }
+
   function mapBackendPromptToLocal(prompt) {
+    const thumb =
+      prompt.thumbnail_url != null && String(prompt.thumbnail_url).trim() !== ''
+        ? String(prompt.thumbnail_url).trim()
+        : null;
     return {
       id: String(prompt.id),
       userId: String(prompt.author_id),
@@ -193,7 +221,8 @@
       tags: Array.isArray(prompt.tags) ? prompt.tags.map(t => t.name) : [],
       createdAt: prompt.created_at || new Date().toISOString(),
       removed: false,
-      creatorName: prompt.author_username || 'Unknown'
+      creatorName: prompt.author_username || 'Unknown',
+      thumbnail_url: thumb
     };
   }
 
@@ -380,12 +409,12 @@
 
   function updateAvatarSettings(userId, updates) {
     const users = load(STORAGE_KEYS.users) || [];
-    const idx = users.findIndex(u => u.id === userId);
+    const idx = users.findIndex(u => String(u.id) === String(userId));
     if (idx === -1) return;
     Object.assign(users[idx], updates);
     save(STORAGE_KEYS.users, users);
     const session = getSessionUser();
-    if (session && session.id === userId) setSessionUser(Object.assign({}, session, updates));
+    if (session && String(session.id) === String(userId)) setSessionUser(Object.assign({}, session, updates));
   }
 
   function startBgAnimation(canvas, type) {
@@ -649,6 +678,48 @@
     return (load(STORAGE_KEYS.users) || []).find(u => u.id === id);
   }
 
+  /**
+   * Merge GET /api/users/:id JSON with optional local demo row (cosmetics, fullName, etc.).
+   */
+  function mergeApiUserWithLocal(apiRow, local) {
+    const idStr = String(apiRow.id);
+    const base = {
+      id: idStr,
+      username: apiRow.username,
+      email: apiRow.email,
+      role: apiRow.role,
+      fullName: (local && local.fullName) || apiRow.username
+    };
+    return local ? Object.assign({}, local, base) : base;
+  }
+
+  /**
+   * Primary: GET /api/users/:id for numeric ids.
+   * Fallback: localStorage demo users (e.g. u1) when non-numeric or API unavailable.
+   */
+  async function resolveProfileUser(profileUserId) {
+    const idStr = String(profileUserId);
+    const local = getUserById(idStr);
+    const numId = parseInt(idStr, 10);
+    if (!Number.isNaN(numId) && numId > 0) {
+      try {
+        const res = await fetch(API_BASE + '/users/' + encodeURIComponent(numId));
+        if (res.ok) {
+          const data = await res.json();
+          return mergeApiUserWithLocal(data, local);
+        }
+        if (res.status === 404) {
+          return local || null;
+        }
+        return local || null;
+      } catch (err) {
+        console.error('Profile user fetch failed:', err);
+        return local || null;
+      }
+    }
+    return local || null;
+  }
+
   // --- 4) Page initializers ---
   function initIndex() {
     const user = getSessionUser();
@@ -860,7 +931,7 @@
         return `
           <article class="prompt-card" data-prompt-id="${p.id}">
             <div class="prompt-thumbnail">
-              <img src="${API_BASE}/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+              <img src="${escapeHtmlAttr(getPromptThumbnailSrc(p))}" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
             </div>
             <div class="prompt-title">${escapeHtml(p.title)}</div>
             <div class="prompt-creator">${escapeHtml(p.creatorName)}</div>
@@ -1002,7 +1073,7 @@
     container.innerHTML = `
       <div class="card mb-3">
         <div class="prompt-detail-thumbnail">
-          <img src="${API_BASE}/prompts/${prompt.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+          <img src="${escapeHtmlAttr(getPromptThumbnailSrc(prompt))}" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
         </div>
         <h1 class="h2">${escapeHtml(prompt.title)}</h1>
         <p class="text-muted text-small">by ${escapeHtml((creator && creator.username) || prompt.creatorName || 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
@@ -1285,7 +1356,7 @@
         backendListEl.innerHTML = prompts.slice(0, 10).map(p => {
           const safeTitle = escapeHtml(p.title || '');
           const safeDesc = escapeHtml((p.description || '').slice(0, 120));
-          const imgHtml = `<div class="prompt-thumbnail"><img src="${API_BASE}/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'></div>`;
+          const imgHtml = `<div class="prompt-thumbnail"><img src="${escapeHtmlAttr(getPromptThumbnailSrc(p))}" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'></div>`;
           return (
             '<div class="prompt-card simple" data-backend-id="' + p.id + '">' +
               '<div class="prompt-card-main">' +
@@ -1386,7 +1457,11 @@
         // Update localStorage id to the MySQL id so other features (like thumbnail serving) work.
         const updatedPrompts = (load(STORAGE_KEYS.prompts) || []).map(p => {
           if (p.id !== tempPromptId) return p;
-          return { ...p, id: String(created.id) };
+          const url =
+            created.thumbnail_url != null && String(created.thumbnail_url).trim() !== ''
+              ? String(created.thumbnail_url).trim()
+              : null;
+          return { ...p, id: String(created.id), thumbnail_url: url };
         });
         save(STORAGE_KEYS.prompts, updatedPrompts);
 
@@ -1420,71 +1495,76 @@
     const user = requireAuth();
     if (!user) return;
     const params = new URLSearchParams(window.location.search);
-    const profileUserId = params.get('user') || user.id;
-    const profileUser = getUserById(profileUserId);
+    const profileUserId = String(params.get('user') || user.id);
     const base = getBase();
-    const isOwn = user.id === profileUserId;
+    const isOwn = String(user.id) === profileUserId;
 
-    if (!profileUser) {
+    const profileNameElEarly = document.getElementById('profileUsername');
+    const profileStatsElEarly = document.getElementById('profileStats');
+    if (profileNameElEarly) profileNameElEarly.textContent = 'Loading…';
+    if (profileStatsElEarly) profileStatsElEarly.textContent = '';
+
+    resolveProfileUser(profileUserId).then(function (profileUser) {
       const container = document.getElementById('profileContent');
-      if (container) container.innerHTML = '<p class="msg msg-error">User not found.</p>';
-      return;
-    }
+      if (!profileUser) {
+        if (container) container.innerHTML = '<p class="msg msg-error">User not found.</p>';
+        return;
+      }
 
-    const prompts = load(STORAGE_KEYS.prompts) || [];
-    const follows = load(STORAGE_KEYS.follows) || [];
-    const followerCount = follows.filter(f => f.followingId === profileUserId).length;
-    const followingCount = follows.filter(f => f.followerId === profileUserId).length;
+      const prompts = load(STORAGE_KEYS.prompts) || [];
+      const follows = load(STORAGE_KEYS.follows) || [];
+      const followerCount = follows.filter(f => String(f.followingId) === profileUserId).length;
+      const followingCount = follows.filter(f => String(f.followerId) === profileUserId).length;
 
-    const container = document.getElementById('profileContent');
-    if (!container) return;
+      if (!container) return;
 
-    const tabContainer = document.getElementById('profileTabsContent');
-    const postsContainer = document.getElementById('profilePosts');
-    const commentsContainer = document.getElementById('profileComments');
-    const savedContainer = document.getElementById('profileSaved');
-    const upvotedContainer = document.getElementById('profileUpvoted');
-    const downvotedContainer = document.getElementById('profileDownvoted');
+      const postsContainer = document.getElementById('profilePosts');
+      const commentsContainer = document.getElementById('profileComments');
+      const savedContainer = document.getElementById('profileSaved');
+      const upvotedContainer = document.getElementById('profileUpvoted');
+      const downvotedContainer = document.getElementById('profileDownvoted');
 
-    const profileNameEl = document.getElementById('profileUsername');
-    const profileStatsEl = document.getElementById('profileStats');
-    if (profileNameEl) profileNameEl.textContent = profileUser.username || profileUser.fullName;
-    if (profileStatsEl) profileStatsEl.textContent = `${followerCount} followers · ${followingCount} following`;
+      const profileNameEl = document.getElementById('profileUsername');
+      const profileStatsEl = document.getElementById('profileStats');
+      if (profileNameEl) profileNameEl.textContent = profileUser.username || profileUser.fullName;
+      if (profileStatsEl) profileStatsEl.textContent = `${followerCount} followers · ${followingCount} following`;
 
-    const votes = load(STORAGE_KEYS.votes) || [];
-    const saves = load(STORAGE_KEYS.saves) || [];
-    const comments = load(STORAGE_KEYS.comments) || [];
+      const votes = load(STORAGE_KEYS.votes) || [];
+      const saves = load(STORAGE_KEYS.saves) || [];
+      const comments = load(STORAGE_KEYS.comments) || [];
 
-    const myPrompts = prompts.filter(p => p.userId === profileUserId && !p.removed);
-    const myComments = comments.filter(c => c.userId === profileUserId);
-    const mySaved = (saves.filter(s => s.userId === user.id).map(s => prompts.find(p => p.id === s.promptId))).filter(Boolean).filter(p => !p.removed);
-    const myUpvoted = (votes.filter(v => v.userId === user.id && v.vote === 1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
-    const myDownvoted = (votes.filter(v => v.userId === user.id && v.vote === -1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
+      const myPrompts = prompts.filter(p => String(p.userId) === profileUserId && !p.removed);
+      const myComments = comments.filter(c => String(c.userId) === profileUserId);
+      const mySaved = (saves.filter(s => String(s.userId) === String(user.id)).map(s => prompts.find(p => p.id === s.promptId))).filter(Boolean).filter(p => !p.removed);
+      const myUpvoted = (votes.filter(v => String(v.userId) === String(user.id) && v.vote === 1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
+      const myDownvoted = (votes.filter(v => String(v.userId) === String(user.id) && v.vote === -1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
 
-    function renderPromptList(arr, el) {
-      if (!el) return;
-      const usersMap = {};
-      (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[u.id] = u; });
-      el.innerHTML = arr.length ? arr.map(p => `
+      function renderPromptList(arr, el) {
+        if (!el) return;
+        const usersMap = {};
+        (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[String(u.id)] = u; });
+        usersMap[profileUserId] = profileUser;
+        el.innerHTML = arr.length ? arr.map(p => `
         <div class="prompt-card" data-prompt-id="${p.id}">
           <div class="prompt-title">${escapeHtml(p.title)}</div>
-          <div class="prompt-creator">${escapeHtml((usersMap[p.userId] && usersMap[p.userId].username) || '')}</div>
+          <div class="prompt-creator">${escapeHtml((usersMap[String(p.userId)] && usersMap[String(p.userId)].username) || '')}</div>
           <div class="prompt-desc">${escapeHtml((p.description || '').slice(0, 80))}...</div>
           <div class="prompt-stats"><span class="stat-chip">↑</span> <span class="stat-chip">💬 ${comments.filter(c => c.promptId === p.id).length}</span></div>
         </div>
       `).join('') : '<p class="text-muted">Nothing here yet.</p>';
-      el.querySelectorAll('.prompt-card').forEach(card => {
-        card.addEventListener('click', () => { window.location.href = base + 'pages/prompt.html?id=' + card.getAttribute('data-prompt-id'); });
-      });
-    }
+        el.querySelectorAll('.prompt-card').forEach(card => {
+          card.addEventListener('click', () => { window.location.href = base + 'pages/prompt.html?id=' + card.getAttribute('data-prompt-id'); });
+        });
+      }
 
-    function renderCommentList(arr, el) {
-      if (!el) return;
-      const usersMap = {};
-      const promptsMap = {};
-      (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[u.id] = u; });
-      prompts.forEach(p => { promptsMap[p.id] = p; });
-      el.innerHTML = arr.length ? arr.map(c => `
+      function renderCommentList(arr, el) {
+        if (!el) return;
+        const usersMap = {};
+        const promptsMap = {};
+        (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[String(u.id)] = u; });
+        usersMap[profileUserId] = profileUser;
+        prompts.forEach(p => { promptsMap[p.id] = p; });
+        el.innerHTML = arr.length ? arr.map(c => `
         <div class="comment-item">
           <div class="comment-author">on "${escapeHtml((promptsMap[c.promptId] && promptsMap[c.promptId].title) || '')}"</div>
           <div class="comment-body">${escapeHtml(c.body)}</div>
@@ -1492,113 +1572,118 @@
           <a href="${base}pages/prompt.html?id=${c.promptId}" class="btn btn-outline btn-sm mt-1">View prompt</a>
         </div>
       `).join('') : '<p class="text-muted">No comments yet.</p>';
-    }
-
-    const tabs = document.querySelectorAll('.tab[data-tab]');
-    function showTab(name) {
-      [postsContainer, commentsContainer, savedContainer, upvotedContainer, downvotedContainer].forEach((el, i) => {
-        if (!el) return;
-        const names = ['posts', 'comments', 'saved', 'upvoted', 'downvoted'];
-        el.style.display = names[i] === name ? 'block' : 'none';
-      });
-      tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === name));
-    }
-    tabs.forEach(t => {
-      t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
-    });
-
-    renderPromptList(myPrompts, postsContainer);
-    renderCommentList(myComments, commentsContainer);
-    renderPromptList(mySaved, savedContainer);
-    renderPromptList(myUpvoted, upvotedContainer);
-    renderPromptList(myDownvoted, downvotedContainer);
-
-    // --- Avatar & Achievements ---
-    const profilePromptIds = new Set(myPrompts.map(p => p.id));
-    const totalUpvotes  = votes.filter(v => profilePromptIds.has(v.promptId) && v.vote === 1).length;
-    const receivedSaves = saves.filter(s => profilePromptIds.has(s.promptId)).length;
-    const avatarStats   = { promptCount: myPrompts.length, totalUpvotes, commentCount: myComments.length, saveCount: receivedSaves };
-    const unlockedIds      = ACHIEVEMENTS_DEF.filter(a => a.check(avatarStats)).map(a => a.id);
-    const unlockedCosmetics = ACHIEVEMENTS_DEF.filter(a => unlockedIds.includes(a.id)).map(a => a.cosmetic);
-
-    const avatarEl       = document.getElementById('avatarDisplay');
-    const customizerEl   = document.getElementById('avatarCustomizer');
-    const achievementsEl = document.getElementById('achievementsList');
-    let bgHandle = null;
-
-    function getSlots() {
-      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
-      return {
-        head: u.equippedHead !== undefined ? u.equippedHead : 'beanie',
-        face: u.equippedFace !== undefined ? u.equippedFace : 'glasses',
-        body: u.equippedBody || null,
-        bg:   u.equippedBg   || null
-      };
-    }
-
-    function rerenderAvatar() {
-      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
-      const slots = getSlots();
-      const dc = [slots.head, slots.face, slots.body].filter(c => c && unlockedCosmetics.includes(c));
-      if (bgHandle) { bgHandle.stop(); bgHandle = null; }
-      if (!avatarEl) return;
-      avatarEl.innerHTML = buildAvatarSVG(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', dc, u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
-      if (slots.bg && unlockedCosmetics.includes(slots.bg)) {
-        const canvas = document.createElement('canvas');
-        canvas.className = 'avatar-bg-canvas';
-        canvas.width = 148; canvas.height = 207;
-        avatarEl.insertBefore(canvas, avatarEl.firstChild);
-        bgHandle = startBgAnimation(canvas, slots.bg);
       }
-    }
 
-    function rerenderAchievements() {
-      if (achievementsEl) achievementsEl.innerHTML = buildAchievementsList(ACHIEVEMENTS_DEF, unlockedIds, isOwn, getSlots());
-    }
-
-    rerenderAvatar();
-    rerenderAchievements();
-
-    if (isOwn && customizerEl) {
-      const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId) || profileUser;
-      customizerEl.innerHTML = buildAvatarCustomizer(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
-      customizerEl.addEventListener('click', e => {
-        const gBtn  = e.target.closest('[data-gender]');
-        const sBtn  = e.target.closest('[data-skin]');
-        const ecBtn = e.target.closest('[data-eye-color]');
-        const scBtn = e.target.closest('[data-shirt-color]');
-        if (!gBtn && !sBtn && !ecBtn && !scBtn) return;
-        const updates = {};
-        if (gBtn)  updates.avatarGender     = gBtn.dataset.gender;
-        if (sBtn)  updates.avatarSkin       = sBtn.dataset.skin;
-        if (ecBtn) updates.avatarEyeColor   = ecBtn.dataset.eyeColor;
-        if (scBtn) updates.avatarShirtColor = scBtn.dataset.shirtColor;
-        updateAvatarSettings(profileUserId, updates);
-        if (gBtn)  customizerEl.querySelectorAll('[data-gender]').forEach(b => b.classList.toggle('active', b.dataset.gender === updates.avatarGender));
-        if (sBtn)  customizerEl.querySelectorAll('[data-skin]').forEach(b => b.classList.toggle('active', b.dataset.skin === updates.avatarSkin));
-        if (ecBtn) customizerEl.querySelectorAll('[data-eye-color]').forEach(b => b.classList.toggle('active', b.dataset.eyeColor === updates.avatarEyeColor));
-        if (scBtn) customizerEl.querySelectorAll('[data-shirt-color]').forEach(b => b.classList.toggle('active', b.dataset.shirtColor === updates.avatarShirtColor));
-        rerenderAvatar();
+      const tabs = document.querySelectorAll('.tab[data-tab]');
+      function showTab(name) {
+        [postsContainer, commentsContainer, savedContainer, upvotedContainer, downvotedContainer].forEach((el, i) => {
+          if (!el) return;
+          const names = ['posts', 'comments', 'saved', 'upvoted', 'downvoted'];
+          el.style.display = names[i] === name ? 'block' : 'none';
+        });
+        tabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === name));
+      }
+      tabs.forEach(t => {
+        t.addEventListener('click', () => showTab(t.getAttribute('data-tab')));
       });
-    }
 
-    if (isOwn && achievementsEl) {
-      achievementsEl.addEventListener('click', e => {
-        const btn = e.target.closest('[data-equip]');
-        if (!btn) return;
-        const cosmetic = btn.dataset.equip;
-        const slot = btn.dataset.slot;
-        if (!unlockedCosmetics.includes(cosmetic)) return;
-        const u = load(STORAGE_KEYS.users)?.find(x => x.id === profileUserId);
-        if (!u) return;
-        const slotKey = 'equipped' + slot.charAt(0).toUpperCase() + slot.slice(1);
-        updateAvatarSettings(profileUserId, { [slotKey]: u[slotKey] === cosmetic ? null : cosmetic });
-        rerenderAvatar();
-        rerenderAchievements();
-      });
-    }
+      renderPromptList(myPrompts, postsContainer);
+      renderCommentList(myComments, commentsContainer);
+      renderPromptList(mySaved, savedContainer);
+      renderPromptList(myUpvoted, upvotedContainer);
+      renderPromptList(myDownvoted, downvotedContainer);
 
-    showTab('posts');
+      // --- Avatar & Achievements ---
+      const profilePromptIds = new Set(myPrompts.map(p => p.id));
+      const totalUpvotes  = votes.filter(v => profilePromptIds.has(v.promptId) && v.vote === 1).length;
+      const receivedSaves = saves.filter(s => profilePromptIds.has(s.promptId)).length;
+      const avatarStats   = { promptCount: myPrompts.length, totalUpvotes, commentCount: myComments.length, saveCount: receivedSaves };
+      const unlockedIds      = ACHIEVEMENTS_DEF.filter(a => a.check(avatarStats)).map(a => a.id);
+      const unlockedCosmetics = ACHIEVEMENTS_DEF.filter(a => unlockedIds.includes(a.id)).map(a => a.cosmetic);
+
+      const avatarEl       = document.getElementById('avatarDisplay');
+      const customizerEl   = document.getElementById('avatarCustomizer');
+      const achievementsEl = document.getElementById('achievementsList');
+      let bgHandle = null;
+
+      function getSlots() {
+        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
+        return {
+          head: u.equippedHead !== undefined ? u.equippedHead : 'beanie',
+          face: u.equippedFace !== undefined ? u.equippedFace : 'glasses',
+          body: u.equippedBody || null,
+          bg:   u.equippedBg   || null
+        };
+      }
+
+      function rerenderAvatar() {
+        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
+        const slots = getSlots();
+        const dc = [slots.head, slots.face, slots.body].filter(c => c && unlockedCosmetics.includes(c));
+        if (bgHandle) { bgHandle.stop(); bgHandle = null; }
+        if (!avatarEl) return;
+        avatarEl.innerHTML = buildAvatarSVG(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', dc, u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
+        if (slots.bg && unlockedCosmetics.includes(slots.bg)) {
+          const canvas = document.createElement('canvas');
+          canvas.className = 'avatar-bg-canvas';
+          canvas.width = 148; canvas.height = 207;
+          avatarEl.insertBefore(canvas, avatarEl.firstChild);
+          bgHandle = startBgAnimation(canvas, slots.bg);
+        }
+      }
+
+      function rerenderAchievements() {
+        if (achievementsEl) achievementsEl.innerHTML = buildAchievementsList(ACHIEVEMENTS_DEF, unlockedIds, isOwn, getSlots());
+      }
+
+      rerenderAvatar();
+      rerenderAchievements();
+
+      if (isOwn && customizerEl) {
+        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
+        customizerEl.innerHTML = buildAvatarCustomizer(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
+        customizerEl.addEventListener('click', e => {
+          const gBtn  = e.target.closest('[data-gender]');
+          const sBtn  = e.target.closest('[data-skin]');
+          const ecBtn = e.target.closest('[data-eye-color]');
+          const scBtn = e.target.closest('[data-shirt-color]');
+          if (!gBtn && !sBtn && !ecBtn && !scBtn) return;
+          const updates = {};
+          if (gBtn)  updates.avatarGender     = gBtn.dataset.gender;
+          if (sBtn)  updates.avatarSkin       = sBtn.dataset.skin;
+          if (ecBtn) updates.avatarEyeColor   = ecBtn.dataset.eyeColor;
+          if (scBtn) updates.avatarShirtColor = scBtn.dataset.shirtColor;
+          updateAvatarSettings(profileUserId, updates);
+          if (gBtn)  customizerEl.querySelectorAll('[data-gender]').forEach(b => b.classList.toggle('active', b.dataset.gender === updates.avatarGender));
+          if (sBtn)  customizerEl.querySelectorAll('[data-skin]').forEach(b => b.classList.toggle('active', b.dataset.skin === updates.avatarSkin));
+          if (ecBtn) customizerEl.querySelectorAll('[data-eye-color]').forEach(b => b.classList.toggle('active', b.dataset.eyeColor === updates.avatarEyeColor));
+          if (scBtn) customizerEl.querySelectorAll('[data-shirt-color]').forEach(b => b.classList.toggle('active', b.dataset.shirtColor === updates.avatarShirtColor));
+          rerenderAvatar();
+        });
+      }
+
+      if (isOwn && achievementsEl) {
+        achievementsEl.addEventListener('click', e => {
+          const btn = e.target.closest('[data-equip]');
+          if (!btn) return;
+          const cosmetic = btn.dataset.equip;
+          const slot = btn.dataset.slot;
+          if (!unlockedCosmetics.includes(cosmetic)) return;
+          const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId);
+          if (!u) return;
+          const slotKey = 'equipped' + slot.charAt(0).toUpperCase() + slot.slice(1);
+          updateAvatarSettings(profileUserId, { [slotKey]: u[slotKey] === cosmetic ? null : cosmetic });
+          rerenderAvatar();
+          rerenderAchievements();
+        });
+      }
+
+      showTab('posts');
+    }).catch(function (err) {
+      console.error('initProfile:', err);
+      const container = document.getElementById('profileContent');
+      if (container) container.innerHTML = '<p class="msg msg-error">Could not load profile.</p>';
+    });
   }
 
   function initSettings() {
