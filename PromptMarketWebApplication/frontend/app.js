@@ -14,7 +14,13 @@
     reports: 'reports',
     resetToken: 'resetToken'
   };
-  const API_BASE = '/api';
+  const API_BASE_URL = (
+    (window.PROMPTMARKET_CONFIG && window.PROMPTMARKET_CONFIG.API_BASE_URL) ||
+    window.API_BASE_URL ||
+    window.__API_BASE_URL ||
+    'https://promptmarket-api-802312334335.us-central1.run.app'
+  ).replace(/\/+$/, '');
+  const API_BASE = API_BASE_URL + '/api';
 
   const MODELS = ['All', 'ChatGPT', 'Claude', 'Gemini', 'Sora', 'Cursor', 'Copilot'];
   const CATEGORIES = [
@@ -854,7 +860,7 @@
         return `
           <article class="prompt-card" data-prompt-id="${p.id}">
             <div class="prompt-thumbnail">
-              <img src="/api/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+              <img src="${API_BASE}/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
             </div>
             <div class="prompt-title">${escapeHtml(p.title)}</div>
             <div class="prompt-creator">${escapeHtml(p.creatorName)}</div>
@@ -996,7 +1002,7 @@
     container.innerHTML = `
       <div class="card mb-3">
         <div class="prompt-detail-thumbnail">
-          <img src="/api/prompts/${prompt.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
+          <img src="${API_BASE}/prompts/${prompt.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
         </div>
         <h1 class="h2">${escapeHtml(prompt.title)}</h1>
         <p class="text-muted text-small">by ${escapeHtml((creator && creator.username) || prompt.creatorName || 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
@@ -1123,7 +1129,7 @@
       btnDeletePrompt.addEventListener('click', async function () {
         if (!confirm('Are you sure you want to delete this prompt?')) return;
         try {
-          const res = await fetch('/api/prompts/' + promptIdInt, { method: 'DELETE' });
+          const res = await fetch(API_BASE + '/prompts/' + promptIdInt, { method: 'DELETE' });
           if (!res.ok) throw new Error('Delete failed with status ' + res.status);
 
           // Keep local demo state consistent with the backend delete.
@@ -1266,7 +1272,7 @@
     async function loadBackendPrompts() {
       if (!backendDemoCard || !backendListEl) return;
       try {
-        const res = await fetch('/api/prompts');
+        const res = await fetch(API_BASE + '/prompts');
         if (!res.ok) {
           throw new Error('Failed to load prompts from backend.');
         }
@@ -1279,7 +1285,7 @@
         backendListEl.innerHTML = prompts.slice(0, 10).map(p => {
           const safeTitle = escapeHtml(p.title || '');
           const safeDesc = escapeHtml((p.description || '').slice(0, 120));
-          const imgHtml = `<div class="prompt-thumbnail"><img src="/api/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'></div>`;
+          const imgHtml = `<div class="prompt-thumbnail"><img src="${API_BASE}/prompts/${p.id}/thumbnail" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'></div>`;
           return (
             '<div class="prompt-card simple" data-backend-id="' + p.id + '">' +
               '<div class="prompt-card-main">' +
@@ -1370,7 +1376,7 @@
         }
         if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
 
-        const res = await fetch('/api/prompts', { method: 'POST', body: formData });
+        const res = await fetch(API_BASE + '/prompts', { method: 'POST', body: formData });
 
         if (!res.ok) {
           throw new Error('Backend returned ' + res.status);

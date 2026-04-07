@@ -92,18 +92,62 @@ function normalizePromptRow(row) {
 }
 
 router.get('/', async (req, res) => {
+  const { categoryId, authorId, q, tag } = req.query;
+  const where = [];
+  const params = [];
+
+  if (categoryId) {
+    if (Number.isNaN(parseInt(categoryId, 10))) {
+      return res.status(400).json({ error: 'categoryId must be a number.' });
+    }
+    where.push('p.category_id = ?');
+    params.push(parseInt(categoryId, 10));
+  }
+  if (authorId) {
+    if (Number.isNaN(parseInt(authorId, 10))) {
+      return res.status(400).json({ error: 'authorId must be a number.' });
+    }
+    where.push('p.author_id = ?');
+    params.push(parseInt(authorId, 10));
+  }
+  if (q) {
+    where.push('(p.title LIKE ? OR p.description LIKE ? OR p.content LIKE ?)');
+    const like = `%${q}%`;
+    params.push(like, like, like);
+  }
+  if (tag) {
+    where.push(
+      'EXISTS (SELECT 1 FROM prompt_tags pt2 JOIN tags t2 ON t2.id = pt2.tag_id WHERE pt2.prompt_id = p.id AND t2.name = ?)'
+    );
+    params.push(tag);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
   try {
-    console.log("Step 1: /api/prompts route hit");
-    console.log("Step 2: querying prompts table");
-    const [rows] = await pool.query("SELECT * FROM prompts");
-    res.json(rows);
+    const [rows] = await pool.query(
+      `${SELECT_PROMPTS_SQL}
+      ${whereSql}
+      GROUP BY
+        p.id,
+        p.title,
+        p.description,
+        p.content,
+        p.model,
+        p.author_id,
+        u.username,
+        p.category_id,
+        c.name,
+        p.thumbnail_url,
+        p.thumbnail_mime_type,
+        p.created_at
+      ORDER BY p.created_at DESC`,
+      params
+    );
+    res.json(rows.map(normalizePromptRow));
   } catch (err) {
-    console.error("PROMPTS ERROR FULL:", err);
-    res.status(500).json({
-      error: "Failed to fetch prompts.",
-      details: err.message,
-      code: err.code || null
-    });
+    console.error('Error fetching prompts:', err);
+    res.status(500).json({ error: 'Failed to fetch prompts.' });
   }
 });
 
