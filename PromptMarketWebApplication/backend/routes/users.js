@@ -50,7 +50,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT id, username, email, role
+      `SELECT id, username, email, role, avatar_style, avatar_seed
        FROM users
        WHERE (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?))
          AND password = ?
@@ -76,7 +76,7 @@ router.get('/:id', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT id, username, email, role, created_at
+      `SELECT id, username, email, role, avatar_style, avatar_seed, created_at
        FROM users
        WHERE id = ?`,
       [id]
@@ -97,7 +97,7 @@ router.put('/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid user id.' });
   }
 
-  const { username, email, password } = req.body || {};
+  const { username, email, password, avatar_style, avatar_seed } = req.body || {};
   if (password !== undefined) {
     const issues = getPasswordIssues(password);
     if (issues.length) {
@@ -107,19 +107,27 @@ router.put('/:id', async (req, res) => {
       });
     }
   }
+
+  const VALID_STYLES = ['adventurer', 'avataaars', 'pixel-art', 'bottts', 'lorelei', 'fun-emoji'];
+  if (avatar_style !== undefined && !VALID_STYLES.includes(avatar_style)) {
+    return res.status(400).json({ error: 'Invalid avatar_style.' });
+  }
+
   try {
     await pool.query(
       `UPDATE users
        SET
          username = COALESCE(?, username),
          email = COALESCE(?, email),
-         password = COALESCE(?, password)
+         password = COALESCE(?, password),
+         avatar_style = COALESCE(?, avatar_style),
+         avatar_seed = COALESCE(?, avatar_seed)
        WHERE id = ?`,
-      [username || null, email || null, password || null, id]
+      [username || null, email || null, password || null, avatar_style || null, avatar_seed || null, id]
     );
 
     const [rows] = await pool.query(
-      'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
+      'SELECT id, username, email, role, avatar_style, avatar_seed, created_at FROM users WHERE id = ?',
       [id]
     );
     if (rows.length === 0) {

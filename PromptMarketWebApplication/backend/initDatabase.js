@@ -113,6 +113,25 @@ async function createTables(conn) {
     )
   `);
 
+  // Add avatar_style to users if missing (idempotent migration)
+  const [avatarStyleCol] = await conn.query(
+    "SHOW COLUMNS FROM users LIKE 'avatar_style'"
+  );
+  if (avatarStyleCol.length === 0) {
+    await conn.query(
+      "ALTER TABLE users ADD COLUMN avatar_style VARCHAR(50) NOT NULL DEFAULT 'adventurer' AFTER role"
+    );
+  }
+
+  const [avatarSeedCol] = await conn.query(
+    "SHOW COLUMNS FROM users LIKE 'avatar_seed'"
+  );
+  if (avatarSeedCol.length === 0) {
+    await conn.query(
+      "ALTER TABLE users ADD COLUMN avatar_seed VARCHAR(100) NULL AFTER avatar_style"
+    );
+  }
+
   // For existing databases where prompts table was created before thumbnail_url existed,
   // add the column only if it is missing. This keeps initialization idempotent.
   const [columns] = await conn.query(
@@ -164,6 +183,68 @@ async function createTables(conn) {
       CONSTRAINT fk_prompt_tags_tag
         FOREIGN KEY (tag_id) REFERENCES tags(id)
         ON DELETE CASCADE
+    )
+  `);
+
+  // votes table
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS votes (
+      user_id INT NOT NULL,
+      prompt_id INT NOT NULL,
+      value TINYINT NOT NULL,
+      PRIMARY KEY (user_id, prompt_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE
+    )
+  `);
+
+  // saves table
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS saves (
+      user_id INT NOT NULL,
+      prompt_id INT NOT NULL,
+      PRIMARY KEY (user_id, prompt_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE
+    )
+  `);
+
+  // comments table
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      prompt_id INT NOT NULL,
+      author_id INT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE,
+      FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // follows table
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS follows (
+      follower_id INT NOT NULL,
+      following_id INT NOT NULL,
+      PRIMARY KEY (follower_id, following_id),
+      FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // reports table
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      reporter_id INT NOT NULL,
+      prompt_id INT NULL,
+      reported_user_id INT NULL,
+      reason TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (prompt_id) REFERENCES prompts(id) ON DELETE CASCADE,
+      FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 }

@@ -47,11 +47,17 @@ const SELECT_PROMPTS_SQL = `
     p.model,
     p.author_id,
     u.username AS author_username,
+    u.avatar_style AS author_avatar_style,
+    u.avatar_seed AS author_avatar_seed,
     p.category_id,
     c.name AS category_name,
     p.thumbnail_url,
     p.thumbnail_mime_type,
     p.created_at,
+    COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) AS upvotes,
+    COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0) AS downvotes,
+    COUNT(DISTINCT cmt.id) AS comment_count,
+    COUNT(DISTINCT s.user_id) AS save_count,
     COALESCE(
       JSON_ARRAYAGG(JSON_OBJECT('id', tagged.id, 'name', tagged.name)),
       JSON_ARRAY()
@@ -59,6 +65,9 @@ const SELECT_PROMPTS_SQL = `
   FROM prompts p
   JOIN users u ON u.id = p.author_id
   LEFT JOIN categories c ON c.id = p.category_id
+  LEFT JOIN votes v ON v.prompt_id = p.id
+  LEFT JOIN comments cmt ON cmt.prompt_id = p.id
+  LEFT JOIN saves s ON s.prompt_id = p.id
   LEFT JOIN (
     SELECT DISTINCT pt.prompt_id, t.id, t.name
     FROM prompt_tags pt
@@ -82,11 +91,17 @@ function normalizePromptRow(row) {
     model: row.model,
     author_id: row.author_id,
     author_username: row.author_username,
+    author_avatar_style: row.author_avatar_style || 'adventurer',
+    author_avatar_seed: row.author_avatar_seed || null,
     category_id: row.category_id,
     category_name: row.category_name,
     thumbnail_url: row.thumbnail_url,
     thumbnail_mime_type: row.thumbnail_mime_type,
     created_at: row.created_at,
+    upvotes: Number(row.upvotes) || 0,
+    downvotes: Number(row.downvotes) || 0,
+    comment_count: Number(row.comment_count) || 0,
+    save_count: Number(row.save_count) || 0,
     tags
   };
 }
@@ -136,6 +151,8 @@ router.get('/', async (req, res) => {
         p.model,
         p.author_id,
         u.username,
+        u.avatar_style,
+        u.avatar_seed,
         p.category_id,
         c.name,
         p.thumbnail_url,

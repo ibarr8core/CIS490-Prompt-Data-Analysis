@@ -76,15 +76,11 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--secondary));
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   transition: var(--transition);
+  display: block;
+  background: #dce6f0;
 }
 .navbar .avatar-circle:hover {
   border-color: var(--accent);
@@ -474,20 +470,79 @@
   font-weight: 700;
 }
 #achievementsList { padding: 0 1.25rem 1rem; }
+.achievement-badges {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem 1rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,46,90,0.15) transparent;
+}
+.achievement-badges::-webkit-scrollbar { height: 4px; }
+.achievement-badges::-webkit-scrollbar-thumb { background: rgba(0,46,90,0.15); border-radius: 4px; }
+.achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: default;
+  flex-shrink: 0;
+  width: 72px;
+}
+.achievement-badge .badge-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  transition: transform 0.15s;
+}
+.achievement-badge.unlocked .badge-icon {
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  box-shadow: 0 3px 10px rgba(255, 170, 0, 0.35);
+}
+.achievement-badge.locked .badge-icon {
+  background: #e5e7eb;
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.achievement-badge:hover .badge-icon { transform: scale(1.1); }
+.achievement-badge .badge-name {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.achievement-badge.unlocked .badge-name { color: var(--primary); }
+.achievement-badge .badge-desc {
+  font-size: 0.55rem;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.3;
+  opacity: 0.8;
+}
+.achievement-badge.locked .badge-desc { opacity: 0.5; }
 
 /* Avatar display */
 .avatar-display {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  padding: 1.25rem 1rem 0.5rem;
+  align-items: center;
+  padding: 1.5rem 1rem;
   background: linear-gradient(175deg, #dce6f0 0%, #EEF3F9 100%);
   border-bottom: 1px solid rgba(0, 46, 90, 0.08);
 }
 .avatar-svg {
-  width: 148px;
-  height: 207px;
-  filter: drop-shadow(0 6px 16px rgba(0, 46, 90, 0.18));
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 6px 20px rgba(0, 46, 90, 0.2));
+  border: 3px solid #fff;
 }
 
 
@@ -593,6 +648,43 @@
 
 /* Avatar customizer sections */
 .avatar-customizer { padding: 0; }
+
+.avatar-style-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.style-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.25rem;
+  border: 2px solid rgba(0, 46, 90, 0.12);
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #555;
+}
+.style-option img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #dce6f0;
+}
+.style-option:hover {
+  border-color: var(--accent);
+  background: #eef3f9;
+}
+.style-option.active {
+  border-color: var(--accent);
+  background: #e8f0fe;
+  color: var(--accent);
+}
 .customizer-section {
   display: flex;
   flex-direction: column;
@@ -643,6 +735,40 @@
   pointer-events: none;
 }
 .avatar-svg { position: relative; z-index: 1; }
+.avatar-controls {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(0, 46, 90, 0.08);
+  background: #f8fafc;
+}
+.avatar-style-mini {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.style-mini-btn {
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.style-mini-btn img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: block;
+  background: #dce6f0;
+}
+.style-mini-btn.active { border-color: var(--accent); }
+.style-mini-btn:hover:not(.active) { border-color: rgba(0,46,90,0.2); }
+.avatar-seed-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
 
 /* ============================================
    MESSAGE BOXES
@@ -744,6 +870,31 @@
 }
 .comment-item:last-child { border-bottom: none; }
 .comment-item .comment-author { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--primary); }
+
+/* User chip — avatar + name, used in comments and post cards */
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 999px;
+  transition: opacity 0.15s;
+}
+.user-chip:hover { opacity: 0.75; }
+.user-chip-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.user-chip-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
 .comment-item .comment-body   { font-size: 0.95rem; line-height: 1.5; }
 .comment-item .comment-meta   { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
 .comment-item .comment-actions { margin-top: 0.5rem; }

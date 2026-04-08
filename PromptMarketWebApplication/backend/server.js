@@ -12,6 +12,11 @@ const promptsRouter = require('./routes/prompts');
 const usersRouter = require('./routes/users');
 const categoriesRouter = require('./routes/categories');
 const tagsRouter = require('./routes/tags');
+const votesRouter = require('./routes/votes');
+const savesRouter = require('./routes/saves');
+const commentsRouter = require('./routes/comments');
+const followsRouter = require('./routes/follows');
+const reportsRouter = require('./routes/reports');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -27,8 +32,13 @@ app.use('/api/prompts', promptsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/tags', tagsRouter);
+app.use('/api/votes', votesRouter);
+app.use('/api/saves', savesRouter);
+app.use('/api/comments', commentsRouter);
+app.use('/api/follows', followsRouter);
+app.use('/api/reports', reportsRouter);
 
-app.get('/', (req, res) => res.send('PromptMarket API is running'));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html')));
 
 const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));

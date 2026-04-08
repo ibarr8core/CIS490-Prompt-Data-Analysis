@@ -7,11 +7,6 @@
     sessionUser: 'sessionUser',
     users: 'users',
     prompts: 'prompts',
-    comments: 'comments',
-    votes: 'votes',
-    saves: 'saves',
-    follows: 'follows',
-    reports: 'reports',
     resetToken: 'resetToken'
   };
   const API_BASE_URL = (
@@ -29,42 +24,16 @@
     'Productivity & Organization', 'AI Automation'
   ];
 
-  const SKIN_TONES = [
-    { hex: '#FDDBB4', label: 'Light' },
-    { hex: '#F1C27D', label: 'Medium Light' },
-    { hex: '#E0AC69', label: 'Medium' },
-    { hex: '#C68642', label: 'Medium Dark' },
-    { hex: '#8D5524', label: 'Dark' },
-    { hex: '#4B2E1A', label: 'Deep' }
-  ];
-
-  const EYE_COLORS = [
-    { hex: '#3a2800', label: 'Brown' },
-    { hex: '#1a5fa8', label: 'Blue' },
-    { hex: '#2d6a2d', label: 'Green' },
-    { hex: '#5a5a5a', label: 'Grey' },
-    { hex: '#8b6914', label: 'Hazel' },
-    { hex: '#cc4400', label: 'Amber' }
-  ];
-
-  const SHIRT_COLORS = [
-    { hex: '#9E9E9E', label: 'Grey' },
-    { hex: '#E8E8E8', label: 'White' },
-    { hex: '#2a2a2a', label: 'Black' },
-    { hex: '#1a3a6b', label: 'Navy' },
-    { hex: '#8B0000', label: 'Red' },
-    { hex: '#1a5c1a', label: 'Green' }
-  ];
 
   const ACHIEVEMENTS_DEF = [
-    { id: 'free_beanie',   name: 'Starter Beanie',   desc: 'Free for all users!',              cosmetic: 'beanie',   slot: 'head', cosmeticName: 'Starter Beanie',  icon: '&#129296;', check: () => true                  },
-    { id: 'free_glasses',  name: 'Round Glasses',    desc: 'Free for all users!',              cosmetic: 'glasses',  slot: 'face', cosmeticName: 'Round Glasses',   icon: '&#128083;', check: () => true                  },
-    { id: 'first_prompt',  name: 'First Post',       desc: 'Post your first prompt',           cosmetic: 'cap',      slot: 'head', cosmeticName: 'Starter Cap',     icon: '&#127913;', check: s => s.promptCount >= 1     },
-    { id: 'first_comment', name: 'Conversationalist',desc: 'Leave your first comment',         cosmetic: 'bg_emoji', slot: 'bg',   cosmeticName: 'Emoji Rain',      icon: '&#128172;', check: s => s.commentCount >= 1    },
-    { id: 'five_prompts',  name: 'Getting Started',  desc: '5 prompts posted',                 cosmetic: 'shades',   slot: 'face', cosmeticName: 'Cool Shades',     icon: '&#128374;', check: s => s.promptCount >= 5     },
-    { id: 'first_save',    name: 'Trendsetter',      desc: 'Get a prompt saved by someone',    cosmetic: 'bg_stars', slot: 'bg',   cosmeticName: 'Star Field',      icon: '&#11088;',  check: s => s.saveCount >= 1       },
-    { id: 'ten_prompts',   name: 'Regular Creator',  desc: '10 prompts posted',                cosmetic: 'hoodie',   slot: 'body', cosmeticName: 'Creator Hoodie',  icon: '&#129405;', check: s => s.promptCount >= 10    },
-    { id: 'top_creator',   name: 'Top Creator',      desc: '25+ upvotes earned',               cosmetic: 'crown',    slot: 'head', cosmeticName: 'Gold Crown',      icon: '&#128081;', check: s => s.totalUpvotes >= 25   }
+    { id: 'free_beanie',   name: 'Welcome Aboard',      desc: 'You showed up — that\'s step one.',       icon: '🎉', check: () => true                  },
+    { id: 'free_glasses',  name: 'Curious Mind',         desc: 'Curiosity is your superpower.',           icon: '🔭', check: () => true                  },
+    { id: 'first_prompt',  name: 'First Words',          desc: 'You published your very first prompt.',   icon: '✍️', check: s => s.promptCount >= 1     },
+    { id: 'first_comment', name: 'In the Convo',         desc: 'You jumped into the conversation.',       icon: '💬', check: s => s.commentCount >= 1    },
+    { id: 'five_prompts',  name: 'On a Roll',            desc: 'Five prompts down, more to go.',          icon: '🎯', check: s => s.promptCount >= 5     },
+    { id: 'first_save',    name: 'Worth Saving',         desc: 'Someone bookmarked your work.',           icon: '⭐', check: s => s.saveCount >= 1       },
+    { id: 'ten_prompts',   name: 'Prolific',             desc: 'Ten prompts posted — you\'re committed.', icon: '🚀', check: s => s.promptCount >= 10    },
+    { id: 'top_creator',   name: 'Hall of Fame',         desc: 'Your prompts earned 25+ upvotes.',        icon: '👑', check: s => s.totalUpvotes >= 25   }
   ];
 
   // Shared inline placeholder (avoids dependency on local image assets).
@@ -75,7 +44,7 @@
   function load(key) {
     try {
       const s = localStorage.getItem(key);
-      return s ? JSON.parse(s) : (key === STORAGE_KEYS.users || key === STORAGE_KEYS.prompts || key === STORAGE_KEYS.comments || key === STORAGE_KEYS.votes || key === STORAGE_KEYS.saves || key === STORAGE_KEYS.follows || key === STORAGE_KEYS.reports ? [] : null);
+      return s ? JSON.parse(s) : (key === STORAGE_KEYS.users || key === STORAGE_KEYS.prompts ? [] : null);
     } catch (_) {
       return null;
     }
@@ -222,295 +191,59 @@
       createdAt: prompt.created_at || new Date().toISOString(),
       removed: false,
       creatorName: prompt.author_username || 'Unknown',
-      thumbnail_url: thumb
+      creatorAvatarStyle: prompt.author_avatar_style || null,
+      creatorAvatarSeed: prompt.author_avatar_seed || null,
+      thumbnail_url: thumb,
+      upvotes: Number(prompt.upvotes) || 0,
+      downvotes: Number(prompt.downvotes) || 0,
+      commentCount: Number(prompt.comment_count) || 0,
+      saveCount: Number(prompt.save_count) || 0
     };
   }
 
+  // In-memory sets populated from the API; avoids per-prompt round trips on listing pages.
+  let _savedPromptIds = new Set();   // prompt ids (strings) saved by the current user
+  let _userVotes = {};               // prompt id -> 1 or -1, current user's votes
+
   // --- Avatar helpers ---
-  function shadeHex(hex, amt) {
-    const c = v => Math.min(255, Math.max(0, Math.round(v)));
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    return '#' + [r, g, b].map(v => c(v + amt).toString(16).padStart(2, '0')).join('');
+  const AVATAR_STYLES = [
+    { id: 'adventurer', label: 'Adventurer' },
+    { id: 'avataaars',  label: 'Avataaars'  },
+    { id: 'pixel-art',  label: 'Pixel Art'  },
+    { id: 'bottts',     label: 'Bottts'     },
+    { id: 'lorelei',    label: 'Lorelei'    },
+    { id: 'fun-emoji',  label: 'Fun Emoji'  }
+  ];
+
+  const AVATAR_SEEDS = [
+    'cosmic','spark','nova','pixel','drift','echo','blaze','storm','frost','sage',
+    'vex','quill','miro','zeno','lyra','coda','wren','kite','dusk','finn'
+  ];
+
+  function dicebearUrl(username, style, seed) {
+    const s = style || 'adventurer';
+    const seedVal = seed || username || 'user';
+    return `https://api.dicebear.com/9.x/${s}/svg?seed=${encodeURIComponent(seedVal)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=solid`;
   }
 
-  function buildAvatarSVG(gender, skin, cosmetics, eyeColor, shirtColor) {
-    eyeColor   = eyeColor   || '#3a2800';
-    shirtColor = shirtColor || '#9E9E9E';
-
-    const sl  = shadeHex(skin,  25);
-    const sm  = shadeHex(skin,  10);
-    const sd  = shadeHex(skin, -20);
-    const sdd = shadeHex(skin, -40);
-    const lipFill = '#d4848a';
-    const lipLine = '#a85a60';
-
-    const bodyPath = gender === 'f'
-      ? 'M 40,170 L 55,155 L 75,146 L 88,140 L 88,150 L 112,150 L 112,140 L 125,146 L 145,155 L 160,170 L 160,280 L 40,280 Z'
-      : 'M 28,170 L 45,152 L 68,143 L 88,138 L 88,150 L 112,150 L 112,138 L 132,143 L 155,152 L 172,170 L 172,280 L 28,280 Z';
-    const bodyShadowPath = gender === 'f'
-      ? 'M 40,170 L 55,155 L 75,146 L 88,140 L 88,280 L 40,280 Z'
-      : 'M 28,170 L 45,152 L 68,143 L 88,138 L 88,280 L 28,280 Z';
-
-    const bodyFill   = cosmetics.includes('hoodie') ? '#16213e' : shirtColor;
-    const bodyShadow = cosmetics.includes('hoodie') ? '#0f3460' : shadeHex(shirtColor, -25);
-
-    const beanieSVG = cosmetics.includes('beanie') ? `
-      <g style="shape-rendering:crispEdges">
-        <rect x="64" y="45" width="72" height="24" rx="10" fill="#CC5500"/>
-        <rect x="68" y="36" width="64" height="17" rx="8"  fill="#CC5500"/>
-        <rect x="75" y="29" width="50" height="13" rx="7"  fill="#CC5500"/>
-        <rect x="64" y="57" width="72" height="10" rx="2"  fill="#A34400"/>
-        <line x1="82"  y1="45" x2="82"  y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
-        <line x1="93"  y1="41" x2="93"  y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
-        <line x1="100" y1="39" x2="100" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
-        <line x1="107" y1="41" x2="107" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
-        <line x1="118" y1="45" x2="118" y2="60" stroke="#A34400" stroke-width="1.5" opacity="0.5"/>
-      </g>` : '';
-
-    const capSVG = cosmetics.includes('cap') ? `
-      <g style="shape-rendering:crispEdges">
-        <rect x="76" y="16" width="48" height="10" fill="#16213e"/>
-        <rect x="70" y="26" width="60" height="10" fill="#16213e"/>
-        <rect x="64" y="36" width="72" height="10" fill="#16213e"/>
-        <rect x="62" y="46" width="76" height="16" fill="#1a1a2e"/>
-        <rect x="50" y="62" width="100" height="10" fill="#0f3460"/>
-        <rect x="98" y="22" width="4" height="4" fill="#00d4aa"/>
-        <rect x="94" y="26" width="4" height="4" fill="#00d4aa"/>
-        <rect x="102" y="26" width="4" height="4" fill="#00d4aa"/>
-        <rect x="98" y="30" width="4" height="4" fill="#00d4aa"/>
-      </g>` : '';
-
-    const crownSVG = cosmetics.includes('crown') ? `
-      <g style="shape-rendering:crispEdges">
-        <rect x="64"  y="32" width="72" height="10" fill="#FFD700"/>
-        <rect x="64"  y="22" width="12" height="10" fill="#FFD700"/>
-        <rect x="67"  y="14" width="6"  height="8"  fill="#FFD700"/>
-        <rect x="94"  y="18" width="12" height="14" fill="#FFD700"/>
-        <rect x="97"  y="10" width="6"  height="8"  fill="#FFD700"/>
-        <rect x="124" y="22" width="12" height="10" fill="#FFD700"/>
-        <rect x="127" y="14" width="6"  height="8"  fill="#FFD700"/>
-        <rect x="66"  y="34" width="6"  height="6"  fill="#FF4081"/>
-        <rect x="97"  y="34" width="6"  height="6"  fill="#00BCD4"/>
-        <rect x="128" y="34" width="6"  height="6"  fill="#FF4081"/>
-      </g>` : '';
-
-    const glassesSVG = cosmetics.includes('glasses') ? `
-      <g style="shape-rendering:crispEdges">
-        <circle cx="83"  cy="91" r="13" fill="none" stroke="#1a1a1a" stroke-width="3"/>
-        <circle cx="117" cy="91" r="13" fill="none" stroke="#1a1a1a" stroke-width="3"/>
-        <rect x="96"  y="88" width="8"  height="3" fill="#1a1a1a" rx="1"/>
-        <rect x="52"  y="88" width="18" height="3" fill="#1a1a1a" rx="1"/>
-        <rect x="130" y="88" width="18" height="3" fill="#1a1a1a" rx="1"/>
-      </g>` : '';
-
-    const shadesSVG = cosmetics.includes('shades') ? `
-      <g>
-        <ellipse cx="83"  cy="91" rx="20" ry="12" fill="#1a1a2e" stroke="#f0f0f0" stroke-width="3"/>
-        <ellipse cx="117" cy="91" rx="20" ry="12" fill="#1a1a2e" stroke="#f0f0f0" stroke-width="3"/>
-        <rect x="103" y="88" width="14" height="5" fill="#f0f0f0"/>
-        <rect x="56"  y="88" width="8"  height="4" fill="#f0f0f0"/>
-        <rect x="136" y="88" width="8"  height="4" fill="#f0f0f0"/>
-      </g>` : '';
-
-    const hoodieSVG = cosmetics.includes('hoodie') ? `
-      <g>
-        <path d="M 82,132 Q 100,150 118,132 Q 112,152 100,156 Q 88,152 82,132 Z" fill="#0f3460"/>
-        <line x1="96"  y1="156" x2="91"  y2="192" stroke="#0d2347" stroke-width="2.5"/>
-        <line x1="104" y1="156" x2="109" y2="192" stroke="#0d2347" stroke-width="2.5"/>
-        <rect x="74" y="198" width="52" height="28" rx="4" fill="#0f3460"/>
-      </g>` : '';
-
-    return `<svg viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">
-      <path d="${bodyPath}" fill="${bodyFill}"/>
-      <path d="${bodyShadowPath}" fill="${bodyShadow}" opacity="0.4"/>
-      <rect x="88" y="132" width="24" height="18" fill="${sm}"/>
-      <polygon points="100,38 133,52 100,90"   fill="${sl}"/>
-      <polygon points="67,52 100,38 100,90"    fill="${sm}"/>
-      <polygon points="133,52 148,82 100,90"   fill="${sm}"/>
-      <polygon points="52,82 67,52 100,90"     fill="${sd}"/>
-      <polygon points="148,82 143,115 100,90"  fill="${sm}"/>
-      <polygon points="57,115 52,82 100,90"    fill="${sd}"/>
-      <polygon points="143,115 125,132 100,90" fill="${sd}"/>
-      <polygon points="75,132 57,115 100,90"   fill="${sdd}"/>
-      <polygon points="125,132 100,136 100,90" fill="${sdd}"/>
-      <polygon points="100,136 75,132 100,90"  fill="${sdd}"/>
-      <polygon points="148,82 156,90 153,108 143,115" fill="${sd}"/>
-      <rect x="73"  y="78" width="20" height="3" rx="1.5" fill="${sdd}" opacity="0.65"/>
-      <rect x="107" y="78" width="20" height="3" rx="1.5" fill="${sdd}" opacity="0.65"/>
-      <ellipse cx="83"  cy="91" rx="10" ry="7" fill="white"/>
-      <ellipse cx="117" cy="91" rx="10" ry="7" fill="white"/>
-      <ellipse cx="83"  cy="91" rx="6.5" ry="5" fill="${eyeColor}"/>
-      <ellipse cx="117" cy="91" rx="6.5" ry="5" fill="${eyeColor}"/>
-      <circle cx="83"  cy="91" r="2.5" fill="#111"/>
-      <circle cx="117" cy="91" r="2.5" fill="#111"/>
-      <circle cx="85"  cy="89" r="1.5" fill="white" opacity="0.9"/>
-      <circle cx="119" cy="89" r="1.5" fill="white" opacity="0.9"/>
-      <polygon points="100,102 96,114 104,114" fill="${sd}" opacity="0.3"/>
-      ${gender === 'f'
-        ? `<path d="M 89,122 Q 94,116 100,120 Q 106,116 111,122 Q 100,134 89,122 Z" fill="${lipFill}"/>
-           <path d="M 89,122 Q 94,116 100,120 Q 106,116 111,122" fill="none" stroke="${lipLine}" stroke-width="1.5"/>`
-        : `<path d="M 92,122 Q 96,119 100,121 Q 104,119 108,122 Q 100,130 92,122 Z" fill="${lipFill}"/>
-           <path d="M 92,122 Q 96,119 100,121 Q 104,119 108,122" fill="none" stroke="${lipLine}" stroke-width="1.5"/>`}
-      ${hoodieSVG}
-      ${beanieSVG}
-      ${capSVG}
-      ${crownSVG}
-      ${glassesSVG}
-      ${shadesSVG}
-    </svg>`;
-  }
-
-  function buildAvatarCustomizer(gender, skin, eyeColor, shirtColor) {
-    const mkSwatches = (items, activeVal, attr) =>
-      items.map(t => `<button class="skin-swatch${t.hex === activeVal ? ' active' : ''}" ${attr}="${t.hex}" style="background:${t.hex}" title="${t.label}" aria-label="${t.label}"></button>`).join('');
-
-    return `<div class="avatar-customizer">
-      <div class="customizer-section">
-        <span class="customizer-label">Body</span>
-        <div class="avatar-gender-toggle">
-          <button class="gender-btn${gender === 'm' ? ' active' : ''}" data-gender="m">&#9794; Male</button>
-          <button class="gender-btn${gender === 'f' ? ' active' : ''}" data-gender="f">&#9792; Female</button>
-        </div>
-      </div>
-      <div class="customizer-section">
-        <span class="customizer-label">Skin</span>
-        <div class="avatar-skin-swatches">${mkSwatches(SKIN_TONES, skin, 'data-skin')}</div>
-      </div>
-      <div class="customizer-section">
-        <span class="customizer-label">Eyes</span>
-        <div class="avatar-skin-swatches">${mkSwatches(EYE_COLORS, eyeColor, 'data-eye-color')}</div>
-      </div>
-      <div class="customizer-section">
-        <span class="customizer-label">Shirt</span>
-        <div class="avatar-skin-swatches">${mkSwatches(SHIRT_COLORS, shirtColor, 'data-shirt-color')}</div>
-      </div>
-    </div>`;
-  }
-
-  function buildAchievementsList(defs, unlockedIds, isOwn, equippedBySlot) {
-    equippedBySlot = equippedBySlot || {};
-    return defs.map(a => {
+  function buildAchievementsBadges(defs, unlockedIds) {
+    return `<div class="achievement-badges">` + defs.map(a => {
       const on = unlockedIds.includes(a.id);
-      const equipped = equippedBySlot[a.slot] === a.cosmetic;
-      const equipBtn = (on && isOwn)
-        ? `<button class="equip-btn${equipped ? ' equipped' : ''}" data-equip="${a.cosmetic}" data-slot="${a.slot}">${equipped ? 'On' : 'Equip'}</button>`
-        : '';
-      return `<div class="achievement-item ${on ? 'unlocked' : 'locked'}">
-        <span class="badge${on ? '' : ' badge-locked'}">${on ? a.icon : '&#128274;'}</span>
-        <div class="achievement-info">
-          <div class="achievement-name">${a.name}</div>
-          <div class="achievement-cosmetic">${on ? a.cosmeticName : '???'}</div>
-          ${!on ? `<div class="achievement-desc">${a.desc}</div>` : ''}
-        </div>
-        ${equipBtn}
+      return `<div class="achievement-badge ${on ? 'unlocked' : 'locked'}">
+        <div class="badge-icon">${on ? a.icon : '🔒'}</div>
+        <div class="badge-name">${a.name}</div>
+        <div class="badge-desc">${on ? a.desc : a.desc}</div>
       </div>`;
-    }).join('');
-  }
-
-  function updateAvatarSettings(userId, updates) {
-    const users = load(STORAGE_KEYS.users) || [];
-    const idx = users.findIndex(u => String(u.id) === String(userId));
-    if (idx === -1) return;
-    Object.assign(users[idx], updates);
-    save(STORAGE_KEYS.users, users);
-    const session = getSessionUser();
-    if (session && String(session.id) === String(userId)) setSessionUser(Object.assign({}, session, updates));
-  }
-
-  function startBgAnimation(canvas, type) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    let stopped = false, animId = null;
-
-    if (type === 'bg_emoji') {
-      const pool = ['✨','💡','🤖','💬','⭐','🎯','📝','💻','🔥','🧠','🎮','🌟','💎','🚀'];
-      const cols = Math.floor(W / 15);
-      const drops = Array.from({ length: cols }, () => Math.random() * -H);
-      const colEmoji = drops.map(() => pool[Math.floor(Math.random() * pool.length)]);
-      let tick = 0;
-      (function draw() {
-        if (stopped) return;
-        ctx.fillStyle = 'rgba(10, 18, 36, 0.14)';
-        ctx.fillRect(0, 0, W, H);
-        ctx.font = '11px serif';
-        drops.forEach((y, i) => {
-          if (tick % 8 === i % 8) colEmoji[i] = pool[Math.floor(Math.random() * pool.length)];
-          ctx.fillText(colEmoji[i], i * 15 + 1, y);
-          drops[i] += 1.1;
-          if (drops[i] > H + 15) drops[i] = Math.random() * -40;
-        });
-        tick++;
-        animId = requestAnimationFrame(draw);
-      })();
-    } else if (type === 'bg_stars') {
-      const pool = ['⭐','✨','🌟','💫','🔆','🌙'];
-      const stars = Array.from({ length: 20 }, () => ({
-        x: Math.random() * W, y: Math.random() * H,
-        vy: -(0.3 + Math.random() * 0.4),
-        e: pool[Math.floor(Math.random() * pool.length)]
-      }));
-      (function draw() {
-        if (stopped) return;
-        ctx.clearRect(0, 0, W, H);
-        ctx.font = '11px serif';
-        stars.forEach(s => {
-          ctx.fillText(s.e, s.x, s.y);
-          s.y += s.vy;
-          if (s.y < -15) { s.y = H + 10; s.x = Math.random() * W; s.e = pool[Math.floor(Math.random() * pool.length)]; }
-        });
-        animId = requestAnimationFrame(draw);
-      })();
-    }
-
-    return { stop() { stopped = true; if (animId) cancelAnimationFrame(animId); } };
+    }).join('') + `</div>`;
   }
 
   // --- 2) Seed demo data ---
   function seedDemoDataIfEmpty() {
     if (load(STORAGE_KEYS.users)?.length > 0) return;
-    const users = [
+    save(STORAGE_KEYS.users, [
       { id: 'u1', fullName: 'Admin User', email: 'admin@prompt.demo', username: 'admin', password: 'Admin123!', role: 'admin', avatarUrl: '', createdAt: new Date().toISOString() },
       { id: 'u2', fullName: 'Demo User', email: 'demo@prompt.demo', username: 'demo', password: 'Demo123!', role: 'user', avatarUrl: '', createdAt: new Date().toISOString() }
-    ];
-    save(STORAGE_KEYS.users, users);
-
-    const comments = [
-      { id: 'c1', promptId: 'p1', userId: 'u2', body: 'Used this for my thesis outline. Very helpful!', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-      { id: 'c2', promptId: 'p1', userId: 'u1', body: 'Glad it helped. You can extend with more subsections.', createdAt: new Date(Date.now() - 86400000 * 1).toISOString() },
-      { id: 'c3', promptId: 'p2', userId: 'u1', body: 'Clean and practical. Saved for my next PR.', createdAt: new Date(Date.now() - 86400000).toISOString() },
-      { id: 'c4', promptId: 'p3', userId: 'u2', body: 'Perfect for exam prep. Thanks!', createdAt: new Date().toISOString() }
-    ];
-    save(STORAGE_KEYS.comments, comments);
-
-    const votes = [
-      { userId: 'u2', promptId: 'p1', vote: 1 },
-      { userId: 'u1', promptId: 'p2', vote: 1 },
-      { userId: 'u2', promptId: 'p2', vote: 1 },
-      { userId: 'u1', promptId: 'p3', vote: 1 },
-      { userId: 'u2', promptId: 'p3', vote: -1 },
-      { userId: 'u1', promptId: 'p4', vote: 1 },
-      { userId: 'u2', promptId: 'p5', vote: 1 },
-      { userId: 'u1', promptId: 'p6', vote: 1 }
-    ];
-    save(STORAGE_KEYS.votes, votes);
-
-    const saves = [
-      { userId: 'u2', promptId: 'p1' },
-      { userId: 'u2', promptId: 'p3' },
-      { userId: 'u1', promptId: 'p2' }
-    ];
-    save(STORAGE_KEYS.saves, saves);
-
-    const follows = [
-      { followerId: 'u2', followingId: 'u1' },
-      { followerId: 'u1', followingId: 'u2' }
-    ];
-    save(STORAGE_KEYS.follows, follows);
-
-    const reports = [
-      { id: 'r1', promptId: 'p1', userId: 'u2', reason: 'Spam', createdAt: new Date().toISOString() }
-    ];
-    save(STORAGE_KEYS.reports, reports);
+    ]);
   }
 
   // --- 3) Navbar ---
@@ -531,12 +264,11 @@
         <a class="btn btn-primary btn-sm" href="${base}pages/register.html">Register</a>
       `;
     } else {
-      const initial = (user.username || user.fullName || 'U').charAt(0).toUpperCase();
       right = `
         <a class="nav-link" href="${base}pages/explore.html">Explore</a>
         <a class="nav-link" href="${base}pages/postcreation.html">Create</a>
         <div class="avatar-wrap" id="avatarDropdownWrap">
-          <div class="avatar-circle" id="avatarBtn" title="${user.username}">${initial}</div>
+          <img class="avatar-circle" id="avatarBtn" src="${dicebearUrl(user.username, user.avatar_style, user.avatar_seed)}" alt="${user.username}" title="${user.username}" />
           <div class="avatar-dropdown" id="avatarDropdown">
             <a href="${base}pages/profile.html">Profile</a>
             <a href="${base}pages/accountsettings.html">Account Settings</a>
@@ -605,23 +337,8 @@
     }
   }
 
-  function getPromptScore(promptId) {
-    const votes = load(STORAGE_KEYS.votes) || [];
-    let score = 0;
-    votes.forEach(v => {
-      if (v.promptId === promptId) score += v.vote;
-    });
-    return score;
-  }
-
-  function getPromptCommentCount(promptId) {
-    const comments = load(STORAGE_KEYS.comments) || [];
-    return comments.filter(c => c.promptId === promptId).length;
-  }
-
   function isSaved(userId, promptId) {
-    const saves = load(STORAGE_KEYS.saves) || [];
-    return saves.some(s => s.userId === userId && s.promptId === promptId);
+    return _savedPromptIds.has(String(promptId));
   }
 
   function getPromptsFiltered(opts) {
@@ -642,16 +359,12 @@
       );
     }
 
-    const votes = load(STORAGE_KEYS.votes) || [];
-    const comments = load(STORAGE_KEYS.comments) || [];
-    const saves = load(STORAGE_KEYS.saves) || [];
-
     prompts = prompts.map(p => {
-      const score = votes.filter(v => v.promptId === p.id).reduce((a, v) => a + v.vote, 0);
-      const up = votes.filter(v => v.promptId === p.id && v.vote === 1).length;
-      const down = votes.filter(v => v.promptId === p.id && v.vote === -1).length;
-      const commentCount = comments.filter(c => c.promptId === p.id).length;
-      const saveCount = saves.filter(s => s.promptId === p.id).length;
+      const up = p.upvotes || 0;
+      const down = p.downvotes || 0;
+      const score = up - down;
+      const commentCount = p.commentCount || 0;
+      const saveCount = p.saveCount || 0;
       const engagement = score + commentCount + saveCount;
       const creator = users.find(u => u.id === p.userId);
       return {
@@ -688,7 +401,9 @@
       username: apiRow.username,
       email: apiRow.email,
       role: apiRow.role,
-      fullName: (local && local.fullName) || apiRow.username
+      fullName: (local && local.fullName) || apiRow.username,
+      avatar_style: apiRow.avatar_style || 'adventurer',
+      avatar_seed: apiRow.avatar_seed || null
     };
     return local ? Object.assign({}, local, base) : base;
   }
@@ -910,6 +625,14 @@
     const sortSelect = document.getElementById('sortSelect');
     const navSearch = document.getElementById('navSearch');
 
+    const user = getSessionUser();
+    if (user && !isNaN(parseInt(user.id, 10))) {
+      fetch(API_BASE + '/saves?user_id=' + user.id)
+        .then(r => r.ok ? r.json() : [])
+        .then(rows => { _savedPromptIds = new Set((rows || []).map(r => String(r.prompt_id))); })
+        .catch(() => {});
+    }
+
     async function refreshPromptsFromBackend(opts) {
       try {
         const params = new URLSearchParams();
@@ -934,7 +657,7 @@
               <img src="${escapeHtmlAttr(getPromptThumbnailSrc(p))}" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
             </div>
             <div class="prompt-title">${escapeHtml(p.title)}</div>
-            <div class="prompt-creator">${escapeHtml(p.creatorName)}</div>
+            <div class="prompt-creator">${userChip(p.userId, p.creatorName, p.creatorAvatarStyle, p.creatorAvatarSeed, base)}</div>
             <div class="prompt-desc">${escapeHtml((p.description || '').slice(0, 100))}${(p.description || '').length > 100 ? '...' : ''}</div>
             <div class="prompt-stats">
               <span class="stat-chip">↑ ${p.upvotes}</span>
@@ -951,20 +674,28 @@
         const id = card.getAttribute('data-prompt-id');
         card.addEventListener('click', function (e) {
           if (e.target.closest('.save-btn')) return;
+          if (e.target.closest('.user-chip')) return;
           window.location.href = base + 'pages/prompt.html?id=' + id;
         });
       });
       container.querySelectorAll('.save-btn').forEach(btn => {
-        btn.addEventListener('click', function (e) {
+        btn.addEventListener('click', async function (e) {
           e.stopPropagation();
           const user = getSessionUser();
           if (!user) { alert('Login required to save prompts.'); window.location.href = base + 'pages/login.html'; return; }
           const pid = this.getAttribute('data-prompt-id');
-          let saves = load(STORAGE_KEYS.saves) || [];
-          const idx = saves.findIndex(s => s.userId === user.id && s.promptId === pid);
-          if (idx >= 0) saves.splice(idx, 1);
-          else saves.push({ userId: user.id, promptId: pid });
-          save(STORAGE_KEYS.saves, saves);
+          const alreadySaved = _savedPromptIds.has(pid);
+          try {
+            await fetch(API_BASE + '/saves', {
+              method: alreadySaved ? 'DELETE' : 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: parseInt(user.id, 10), prompt_id: parseInt(pid, 10) })
+            });
+            if (alreadySaved) _savedPromptIds.delete(pid);
+            else _savedPromptIds.add(pid);
+          } catch (err) {
+            console.error('Save toggle failed:', err.message);
+          }
           renderPrompts(getExploreOpts());
         });
       });
@@ -1018,6 +749,12 @@
     return div.innerHTML;
   }
 
+  function userChip(userId, username, avatarStyle, avatarSeed, base) {
+    const href = (base || getBase()) + 'pages/profile.html?user=' + encodeURIComponent(userId);
+    const src = dicebearUrl(username, avatarStyle, avatarSeed);
+    return `<a class="user-chip" href="${href}"><img class="user-chip-avatar" src="${escapeHtmlAttr(src)}" alt="${escapeHtml(username)}" /><span class="user-chip-name">${escapeHtml(username)}</span></a>`;
+  }
+
   async function initPrompt() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -1047,13 +784,59 @@
     }
 
     const creator = getUserById(prompt.userId);
-    const score = getPromptScore(prompt.id);
-    const commentCount = getPromptCommentCount(prompt.id);
-    const saved = user && isSaved(user.id, prompt.id);
-    const votes = load(STORAGE_KEYS.votes) || [];
-    const myVote = user ? votes.find(v => v.userId === user.id && v.promptId === prompt.id) : null;
-    const follows = load(STORAGE_KEYS.follows) || [];
-    const following = user && follows.some(f => f.followerId === user.id && f.followingId === prompt.userId);
+
+    // Load per-prompt stats and user state from API in parallel
+    let promptUpvotes = prompt.upvotes || 0;
+    let promptDownvotes = prompt.downvotes || 0;
+    let promptCommentCount = prompt.commentCount || 0;
+    let myVoteValue = null;
+    let isSavedPrompt = false;
+    let isFollowing = false;
+
+    const promptIdInt = parseInt(prompt.id, 10);
+    const userIdInt = user ? parseInt(user.id, 10) : null;
+
+    if (!Number.isNaN(promptIdInt)) {
+      await Promise.all([
+        fetch(API_BASE + '/votes?prompt_id=' + promptIdInt)
+          .then(r => r.ok ? r.json() : [])
+          .then(rows => {
+            promptUpvotes   = rows.filter(v => v.value === 1).length;
+            promptDownvotes = rows.filter(v => v.value === -1).length;
+            if (user && userIdInt) {
+              const mine = rows.find(v => v.user_id === userIdInt);
+              myVoteValue = mine ? mine.value : null;
+            }
+          }).catch(() => {}),
+        user && userIdInt ? fetch(API_BASE + '/saves?user_id=' + userIdInt)
+          .then(r => r.ok ? r.json() : [])
+          .then(rows => {
+            _savedPromptIds = new Set((rows || []).map(r => String(r.prompt_id)));
+            isSavedPrompt = _savedPromptIds.has(String(prompt.id));
+          }).catch(() => {}) : Promise.resolve(),
+        user && userIdInt ? fetch(API_BASE + '/follows?user_id=' + userIdInt)
+          .then(r => r.ok ? r.json() : { following: [] })
+          .then(data => {
+            const followingList = (data.following || []).map(f => f.following_id);
+            isFollowing = followingList.includes(parseInt(prompt.userId, 10));
+          }).catch(() => {}) : Promise.resolve(),
+        fetch(API_BASE + '/comments?prompt_id=' + promptIdInt)
+          .then(r => r.ok ? r.json() : [])
+          .then(rows => { promptCommentCount = rows.length; })
+          .catch(() => {})
+      ]);
+    }
+
+    const score = promptUpvotes - promptDownvotes;
+    const commentCount = promptCommentCount;
+    const saved = isSavedPrompt;
+    const following = isFollowing;
+    const myVote = myVoteValue !== null ? { value: myVoteValue } : null;
+
+    const canDeletePrompt =
+      user &&
+      !Number.isNaN(promptIdInt) &&
+      (user.role === 'admin' || String(prompt.userId) === String(user.id));
 
     function requireLogin(msg) {
       if (!user) {
@@ -1064,19 +847,13 @@
       return true;
     }
 
-    const promptIdInt = parseInt(prompt.id, 10);
-    const canDeletePrompt =
-      user &&
-      !Number.isNaN(promptIdInt) &&
-      (user.role === 'admin' || String(prompt.userId) === String(user.id));
-
     container.innerHTML = `
       <div class="card mb-3">
         <div class="prompt-detail-thumbnail">
           <img src="${escapeHtmlAttr(getPromptThumbnailSrc(prompt))}" alt="" onerror='this.onerror=null; this.src="${THUMBNAIL_FALLBACK_SRC}"'>
         </div>
         <h1 class="h2">${escapeHtml(prompt.title)}</h1>
-        <p class="text-muted text-small">by ${escapeHtml((creator && creator.username) || prompt.creatorName || 'Unknown')} · ${formatDate(prompt.createdAt)}</p>
+        <p class="text-muted text-small">${userChip(prompt.userId, (creator && creator.username) || prompt.creatorName || 'Unknown', prompt.creatorAvatarStyle, prompt.creatorAvatarSeed, base)} · ${formatDate(prompt.createdAt)}</p>
         <p>${escapeHtml(prompt.description || '')}</p>
         <div class="prompt-stats mb-2">
           <span class="stat-chip">↑ ${(score > 0 ? score : 0)}</span>
@@ -1102,17 +879,22 @@
       </div>
     `;
 
-    const comments = (load(STORAGE_KEYS.comments) || []).filter(c => c.promptId === prompt.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
-    const usersMap = {};
-    (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[u.id] = u; });
     const preview = document.getElementById('promptCommentsPreview');
-    if (preview) preview.innerHTML = comments.length ? comments.map(c => `
-      <div class="comment-item">
-        <div class="comment-author">${escapeHtml((usersMap[c.userId] && usersMap[c.userId].username) || 'User')}</div>
-        <div class="comment-body">${escapeHtml(c.body)}</div>
-        <div class="comment-meta">${formatDate(c.createdAt)}</div>
-      </div>
-    `).join('') : '<p class="text-muted">No comments yet.</p>';
+    if (preview && !Number.isNaN(promptIdInt)) {
+      fetch(API_BASE + '/comments?prompt_id=' + promptIdInt)
+        .then(r => r.ok ? r.json() : [])
+        .then(comments => {
+          const top3 = (comments || []).slice(0, 3);
+          preview.innerHTML = top3.length ? top3.map(c => `
+            <div class="comment-item">
+              <div class="comment-author">${userChip(c.author_id, c.author_username || 'User', c.avatar_style, c.avatar_seed, base)}</div>
+              <div class="comment-body">${escapeHtml(c.content)}</div>
+              <div class="comment-meta">${formatDate(c.created_at)}</div>
+            </div>
+          `).join('') : '<p class="text-muted">No comments yet.</p>';
+        })
+        .catch(() => { preview.innerHTML = '<p class="text-muted">No comments yet.</p>'; });
+    }
 
     const btnUpvote = document.getElementById('btnUpvote');
     const btnDownvote = document.getElementById('btnDownvote');
@@ -1121,46 +903,71 @@
     const btnReport = document.getElementById('btnReport');
     const btnCopyPrompt = document.getElementById('btnCopyPrompt');
 
-    function applyVote(vote) {
+    async function applyVote(vote) {
       if (!requireLogin('Login required to vote.')) return;
-      let votes = load(STORAGE_KEYS.votes) || [];
-      const idx = votes.findIndex(v => v.userId === user.id && v.promptId === prompt.id);
-      if (idx >= 0) votes[idx].vote = vote;
-      else votes.push({ userId: user.id, promptId: prompt.id, vote });
-      save(STORAGE_KEYS.votes, votes);
+      try {
+        await fetch(API_BASE + '/votes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userIdInt, prompt_id: promptIdInt, value: vote })
+        });
+      } catch (err) {
+        console.error('Vote failed:', err.message);
+      }
       window.location.reload();
     }
     if (btnUpvote) btnUpvote.addEventListener('click', () => applyVote(1));
     if (btnDownvote) btnDownvote.addEventListener('click', () => applyVote(-1));
 
-    if (btnSave) btnSave.addEventListener('click', function () {
+    if (btnSave) btnSave.addEventListener('click', async function () {
       if (!requireLogin('Login required to save.')) return;
-      let saves = load(STORAGE_KEYS.saves) || [];
-      const idx = saves.findIndex(s => s.userId === user.id && s.promptId === prompt.id);
-      if (idx >= 0) saves.splice(idx, 1);
-      else saves.push({ userId: user.id, promptId: prompt.id });
-      save(STORAGE_KEYS.saves, saves);
-      this.textContent = isSaved(user.id, prompt.id) ? '★ Saved' : '☆ Save';
-      this.classList.toggle('saved', isSaved(user.id, prompt.id));
+      const nowSaved = _savedPromptIds.has(String(prompt.id));
+      try {
+        await fetch(API_BASE + '/saves', {
+          method: nowSaved ? 'DELETE' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userIdInt, prompt_id: promptIdInt })
+        });
+        if (nowSaved) _savedPromptIds.delete(String(prompt.id));
+        else _savedPromptIds.add(String(prompt.id));
+      } catch (err) {
+        console.error('Save failed:', err.message);
+      }
+      const s = _savedPromptIds.has(String(prompt.id));
+      this.textContent = s ? '★ Saved' : '☆ Save';
+      this.classList.toggle('saved', s);
     });
 
-    if (btnFollow) btnFollow.addEventListener('click', function () {
+    let _following = isFollowing;
+    if (btnFollow) btnFollow.addEventListener('click', async function () {
       if (!requireLogin('Login required to follow.')) return;
-      let follows = load(STORAGE_KEYS.follows) || [];
-      const idx = follows.findIndex(f => f.followerId === user.id && f.followingId === prompt.userId);
-      if (idx >= 0) follows.splice(idx, 1);
-      else follows.push({ followerId: user.id, followingId: prompt.userId });
-      save(STORAGE_KEYS.follows, follows);
-      this.textContent = follows.some(f => f.followerId === user.id && f.followingId === prompt.userId) ? 'Following' : 'Follow creator';
+      try {
+        await fetch(API_BASE + '/follows', {
+          method: _following ? 'DELETE' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ follower_id: userIdInt, following_id: parseInt(prompt.userId, 10) })
+        });
+        _following = !_following;
+        this.textContent = _following ? 'Following' : 'Follow creator';
+      } catch (err) {
+        console.error('Follow failed:', err.message);
+      }
     });
 
-    if (btnReport) btnReport.addEventListener('click', function () {
+    if (btnReport) btnReport.addEventListener('click', async function () {
       if (!requireLogin('Login required to report.')) return;
-      const reason = prompt('Reason for report (e.g. Spam, Inappropriate):') || 'Other';
-      const reports = load(STORAGE_KEYS.reports) || [];
-      reports.push({ id: id(), promptId: prompt.id, userId: user.id, reason, createdAt: new Date().toISOString() });
-      save(STORAGE_KEYS.reports, reports);
-      alert('Thank you. Your report has been submitted.');
+      const reason = window.prompt('Reason for report (e.g. Spam, Inappropriate):') || 'Other';
+      try {
+        await fetch(API_BASE + '/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reporter_id: userIdInt, prompt_id: promptIdInt, reason })
+        });
+        alert('Thank you. Your report has been submitted.');
+      } catch (err) {
+        console.error('Report failed:', err.message);
+        alert('Failed to submit report. Please try again.');
+      }
     });
 
     if (btnCopyPrompt) {
@@ -1203,19 +1010,10 @@
           const res = await fetch(API_BASE + '/prompts/' + promptIdInt, { method: 'DELETE' });
           if (!res.ok) throw new Error('Delete failed with status ' + res.status);
 
-          // Keep local demo state consistent with the backend delete.
+          // Remove from local prompts cache so the listing doesn't show a stale entry.
           const promptIdStr = String(prompt.id);
           const updatedPrompts = (load(STORAGE_KEYS.prompts) || []).filter(p => String(p.id) !== promptIdStr);
           save(STORAGE_KEYS.prompts, updatedPrompts);
-
-          const updatedVotes = (load(STORAGE_KEYS.votes) || []).filter(v => String(v.promptId) !== promptIdStr);
-          save(STORAGE_KEYS.votes, updatedVotes);
-
-          const updatedSaves = (load(STORAGE_KEYS.saves) || []).filter(s => String(s.promptId) !== promptIdStr);
-          save(STORAGE_KEYS.saves, updatedSaves);
-
-          const updatedComments = (load(STORAGE_KEYS.comments) || []).filter(c => String(c.promptId) !== promptIdStr);
-          save(STORAGE_KEYS.comments, updatedComments);
 
           window.location.href = base + 'pages/explore.html';
         } catch (err) {
@@ -1226,64 +1024,75 @@
     }
   }
 
-  function initComments() {
+  async function initComments() {
     const params = new URLSearchParams(window.location.search);
     const promptId = params.get('promptId');
+    const promptIdInt = parseInt(promptId, 10);
     const base = getBase();
     const user = getSessionUser();
-    const prompts = load(STORAGE_KEYS.prompts) || [];
-    const prompt = prompts.find(p => p.id === promptId);
     const container = document.getElementById('commentsPageContent');
     const backLink = document.getElementById('backToPrompt');
     if (backLink) backLink.href = base + 'pages/prompt.html?id=' + (promptId || '');
 
-    if (!prompt || !container) {
+    if (!promptId || Number.isNaN(promptIdInt) || !container) {
       if (container) container.innerHTML = '<p class="msg msg-error">Prompt not found.</p>';
       return;
     }
 
+    // Show title from local cache if available
+    const prompts = load(STORAGE_KEYS.prompts) || [];
+    const cachedPrompt = prompts.find(p => p.id === promptId);
     const titleEl = document.getElementById('commentsPromptTitle');
-    if (titleEl) titleEl.textContent = prompt.title;
+    if (titleEl && cachedPrompt) titleEl.textContent = cachedPrompt.title;
 
-    function renderComments() {
-      const comments = (load(STORAGE_KEYS.comments) || []).filter(c => c.promptId === promptId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      const usersMap = {};
-      (load(STORAGE_KEYS.users) || []).forEach(u => { usersMap[u.id] = u; });
+    async function renderComments() {
       const listEl = document.getElementById('commentsList');
       if (!listEl) return;
-      listEl.innerHTML = comments.map(c => `
-        <div class="comment-item" data-comment-id="${c.id}">
-          <div class="comment-author">${escapeHtml((usersMap[c.userId] && usersMap[c.userId].username) || 'User')}</div>
-          <div class="comment-body">${escapeHtml(c.body)}</div>
-          <div class="comment-meta">${formatDate(c.createdAt)}</div>
-          ${user && user.id === c.userId ? '<div class="comment-actions"><button type="button" class="btn btn-outline btn-sm btn-delete-comment" data-id="' + c.id + '">Delete</button></div>' : ''}
-        </div>
-      `).join('');
+      try {
+        const comments = await fetch(API_BASE + '/comments?prompt_id=' + promptIdInt)
+          .then(r => r.ok ? r.json() : []);
+        listEl.innerHTML = comments.length ? comments.map(c => `
+          <div class="comment-item" data-comment-id="${c.id}">
+            <div class="comment-author">${userChip(c.author_id, c.author_username || 'User', c.avatar_style, c.avatar_seed, base)}</div>
+            <div class="comment-body">${escapeHtml(c.content)}</div>
+            <div class="comment-meta">${formatDate(c.created_at)}</div>
+            ${user && String(user.id) === String(c.author_id) ? '<div class="comment-actions"><button type="button" class="btn btn-outline btn-sm btn-delete-comment" data-id="' + c.id + '">Delete</button></div>' : ''}
+          </div>
+        `).join('') : '<p class="text-muted">No comments yet.</p>';
+      } catch (_) {
+        listEl.innerHTML = '<p class="text-muted">Could not load comments.</p>';
+      }
       listEl.querySelectorAll('.btn-delete-comment').forEach(btn => {
-        btn.addEventListener('click', function () {
-          let comments = load(STORAGE_KEYS.comments) || [];
-          comments = comments.filter(c => c.id !== this.getAttribute('data-id'));
-          save(STORAGE_KEYS.comments, comments);
-          renderComments();
+        btn.addEventListener('click', async function () {
+          const cid = this.getAttribute('data-id');
+          try {
+            await fetch(API_BASE + '/comments/' + cid, { method: 'DELETE' });
+            renderComments();
+          } catch (err) {
+            console.error('Delete comment failed:', err.message);
+          }
         });
       });
     }
 
     const form = document.getElementById('addCommentForm');
     if (form) {
-      form.addEventListener('submit', function (e) {
+      form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (!user) {
-          window.location.href = base + 'pages/login.html';
-          return;
-        }
+        if (!user) { window.location.href = base + 'pages/login.html'; return; }
         const body = (form.body && form.body.value || '').trim();
         if (!body) return;
-        const comments = load(STORAGE_KEYS.comments) || [];
-        comments.push({ id: id(), promptId, userId: user.id, body, createdAt: new Date().toISOString() });
-        save(STORAGE_KEYS.comments, comments);
-        form.body.value = '';
-        renderComments();
+        try {
+          await fetch(API_BASE + '/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt_id: promptIdInt, author_id: parseInt(user.id, 10), content: body })
+          });
+          form.body.value = '';
+          renderComments();
+        } catch (err) {
+          console.error('Add comment failed:', err.message);
+        }
       });
     }
 
@@ -1504,7 +1313,7 @@
     if (profileNameElEarly) profileNameElEarly.textContent = 'Loading…';
     if (profileStatsElEarly) profileStatsElEarly.textContent = '';
 
-    resolveProfileUser(profileUserId).then(function (profileUser) {
+    resolveProfileUser(profileUserId).then(async function (profileUser) {
       const container = document.getElementById('profileContent');
       if (!profileUser) {
         if (container) container.innerHTML = '<p class="msg msg-error">User not found.</p>';
@@ -1512,9 +1321,13 @@
       }
 
       const prompts = load(STORAGE_KEYS.prompts) || [];
-      const follows = load(STORAGE_KEYS.follows) || [];
-      const followerCount = follows.filter(f => String(f.followingId) === profileUserId).length;
-      const followingCount = follows.filter(f => String(f.followerId) === profileUserId).length;
+      let followerCount = 0;
+      let followingCount = 0;
+      try {
+        const followData = await fetch(API_BASE + '/follows?user_id=' + profileUserId).then(r => r.ok ? r.json() : { followers: [], following: [] });
+        followerCount = (followData.followers || []).length;
+        followingCount = (followData.following || []).length;
+      } catch (_) {}
 
       if (!container) return;
 
@@ -1529,15 +1342,34 @@
       if (profileNameEl) profileNameEl.textContent = profileUser.username || profileUser.fullName;
       if (profileStatsEl) profileStatsEl.textContent = `${followerCount} followers · ${followingCount} following`;
 
-      const votes = load(STORAGE_KEYS.votes) || [];
-      const saves = load(STORAGE_KEYS.saves) || [];
-      const comments = load(STORAGE_KEYS.comments) || [];
+      let votes = [];
+      let saves = [];
+      let comments = [];
+      try {
+        await Promise.all([
+          fetch(API_BASE + '/votes?user_id=' + user.id).then(r => r.ok ? r.json() : []).then(rows => { votes = rows || []; }),
+          fetch(API_BASE + '/saves?user_id=' + user.id).then(r => r.ok ? r.json() : []).then(rows => { saves = rows || []; }),
+          // Comments by the profile user — fetched per-prompt below after we know myPrompts
+        ]);
+      } catch (_) {}
 
       const myPrompts = prompts.filter(p => String(p.userId) === profileUserId && !p.removed);
-      const myComments = comments.filter(c => String(c.userId) === profileUserId);
-      const mySaved = (saves.filter(s => String(s.userId) === String(user.id)).map(s => prompts.find(p => p.id === s.promptId))).filter(Boolean).filter(p => !p.removed);
-      const myUpvoted = (votes.filter(v => String(v.userId) === String(user.id) && v.vote === 1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
-      const myDownvoted = (votes.filter(v => String(v.userId) === String(user.id) && v.vote === -1).map(v => prompts.find(p => p.id === v.promptId))).filter(Boolean).filter(p => !p.removed);
+
+      // Fetch comments by the profile user across their prompts
+      for (const p of myPrompts) {
+        try {
+          const pid = parseInt(p.id, 10);
+          if (!Number.isNaN(pid)) {
+            const rows = await fetch(API_BASE + '/comments?prompt_id=' + pid).then(r => r.ok ? r.json() : []);
+            comments.push(...(rows || []).filter(c => String(c.author_id) === profileUserId));
+          }
+        } catch (_) {}
+      }
+
+      const myComments = comments;
+      const mySaved = (saves.map(s => prompts.find(p => String(p.id) === String(s.prompt_id)))).filter(Boolean).filter(p => !p.removed);
+      const myUpvoted = (votes.filter(v => v.value === 1).map(v => prompts.find(p => String(p.id) === String(v.prompt_id)))).filter(Boolean).filter(p => !p.removed);
+      const myDownvoted = (votes.filter(v => v.value === -1).map(v => prompts.find(p => String(p.id) === String(v.prompt_id)))).filter(Boolean).filter(p => !p.removed);
 
       function renderPromptList(arr, el) {
         if (!el) return;
@@ -1549,7 +1381,7 @@
           <div class="prompt-title">${escapeHtml(p.title)}</div>
           <div class="prompt-creator">${escapeHtml((usersMap[String(p.userId)] && usersMap[String(p.userId)].username) || '')}</div>
           <div class="prompt-desc">${escapeHtml((p.description || '').slice(0, 80))}...</div>
-          <div class="prompt-stats"><span class="stat-chip">↑</span> <span class="stat-chip">💬 ${comments.filter(c => c.promptId === p.id).length}</span></div>
+          <div class="prompt-stats"><span class="stat-chip">↑ ${p.upvotes || 0}</span> <span class="stat-chip">💬 ${p.commentCount || 0}</span></div>
         </div>
       `).join('') : '<p class="text-muted">Nothing here yet.</p>';
         el.querySelectorAll('.prompt-card').forEach(card => {
@@ -1566,10 +1398,10 @@
         prompts.forEach(p => { promptsMap[p.id] = p; });
         el.innerHTML = arr.length ? arr.map(c => `
         <div class="comment-item">
-          <div class="comment-author">on "${escapeHtml((promptsMap[c.promptId] && promptsMap[c.promptId].title) || '')}"</div>
-          <div class="comment-body">${escapeHtml(c.body)}</div>
-          <div class="comment-meta">${formatDate(c.createdAt)}</div>
-          <a href="${base}pages/prompt.html?id=${c.promptId}" class="btn btn-outline btn-sm mt-1">View prompt</a>
+          <div class="comment-author">on "${escapeHtml((promptsMap[c.prompt_id] && promptsMap[c.prompt_id].title) || '')}"</div>
+          <div class="comment-body">${escapeHtml(c.content)}</div>
+          <div class="comment-meta">${formatDate(c.created_at)}</div>
+          <a href="${base}pages/prompt.html?id=${c.prompt_id}" class="btn btn-outline btn-sm mt-1">View prompt</a>
         </div>
       `).join('') : '<p class="text-muted">No comments yet.</p>';
       }
@@ -1594,87 +1426,85 @@
       renderPromptList(myDownvoted, downvotedContainer);
 
       // --- Avatar & Achievements ---
-      const profilePromptIds = new Set(myPrompts.map(p => p.id));
-      const totalUpvotes  = votes.filter(v => profilePromptIds.has(v.promptId) && v.vote === 1).length;
-      const receivedSaves = saves.filter(s => profilePromptIds.has(s.promptId)).length;
+      // Use pre-computed counts from the enriched prompt objects
+      const totalUpvotes  = myPrompts.reduce((sum, p) => sum + (p.upvotes || 0), 0);
+      const receivedSaves = myPrompts.reduce((sum, p) => sum + (p.saveCount || 0), 0);
       const avatarStats   = { promptCount: myPrompts.length, totalUpvotes, commentCount: myComments.length, saveCount: receivedSaves };
-      const unlockedIds      = ACHIEVEMENTS_DEF.filter(a => a.check(avatarStats)).map(a => a.id);
-      const unlockedCosmetics = ACHIEVEMENTS_DEF.filter(a => unlockedIds.includes(a.id)).map(a => a.cosmetic);
+      const unlockedIds = ACHIEVEMENTS_DEF.filter(a => a.check(avatarStats)).map(a => a.id);
 
       const avatarEl       = document.getElementById('avatarDisplay');
       const customizerEl   = document.getElementById('avatarCustomizer');
       const achievementsEl = document.getElementById('achievementsList');
-      let bgHandle = null;
-
-      function getSlots() {
-        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
-        return {
-          head: u.equippedHead !== undefined ? u.equippedHead : 'beanie',
-          face: u.equippedFace !== undefined ? u.equippedFace : 'glasses',
-          body: u.equippedBody || null,
-          bg:   u.equippedBg   || null
-        };
-      }
-
       function rerenderAvatar() {
-        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
-        const slots = getSlots();
-        const dc = [slots.head, slots.face, slots.body].filter(c => c && unlockedCosmetics.includes(c));
-        if (bgHandle) { bgHandle.stop(); bgHandle = null; }
         if (!avatarEl) return;
-        avatarEl.innerHTML = buildAvatarSVG(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', dc, u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
-        if (slots.bg && unlockedCosmetics.includes(slots.bg)) {
-          const canvas = document.createElement('canvas');
-          canvas.className = 'avatar-bg-canvas';
-          canvas.width = 148; canvas.height = 207;
-          avatarEl.insertBefore(canvas, avatarEl.firstChild);
-          bgHandle = startBgAnimation(canvas, slots.bg);
-        }
+        const username = profileUser.username || 'user';
+        avatarEl.innerHTML = `<img src="${dicebearUrl(username, profileUser.avatar_style, profileUser.avatar_seed)}" class="avatar-svg" alt="${username}'s avatar" />`;
       }
 
       function rerenderAchievements() {
-        if (achievementsEl) achievementsEl.innerHTML = buildAchievementsList(ACHIEVEMENTS_DEF, unlockedIds, isOwn, getSlots());
+        if (achievementsEl) achievementsEl.innerHTML = buildAchievementsBadges(ACHIEVEMENTS_DEF, unlockedIds);
       }
 
       rerenderAvatar();
       rerenderAchievements();
 
       if (isOwn && customizerEl) {
-        const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId) || profileUser;
-        customizerEl.innerHTML = buildAvatarCustomizer(u.avatarGender || 'm', u.avatarSkin || '#E0AC69', u.avatarEyeColor || '#3a2800', u.avatarShirtColor || '#9E9E9E');
-        customizerEl.addEventListener('click', e => {
-          const gBtn  = e.target.closest('[data-gender]');
-          const sBtn  = e.target.closest('[data-skin]');
-          const ecBtn = e.target.closest('[data-eye-color]');
-          const scBtn = e.target.closest('[data-shirt-color]');
-          if (!gBtn && !sBtn && !ecBtn && !scBtn) return;
-          const updates = {};
-          if (gBtn)  updates.avatarGender     = gBtn.dataset.gender;
-          if (sBtn)  updates.avatarSkin       = sBtn.dataset.skin;
-          if (ecBtn) updates.avatarEyeColor   = ecBtn.dataset.eyeColor;
-          if (scBtn) updates.avatarShirtColor = scBtn.dataset.shirtColor;
-          updateAvatarSettings(profileUserId, updates);
-          if (gBtn)  customizerEl.querySelectorAll('[data-gender]').forEach(b => b.classList.toggle('active', b.dataset.gender === updates.avatarGender));
-          if (sBtn)  customizerEl.querySelectorAll('[data-skin]').forEach(b => b.classList.toggle('active', b.dataset.skin === updates.avatarSkin));
-          if (ecBtn) customizerEl.querySelectorAll('[data-eye-color]').forEach(b => b.classList.toggle('active', b.dataset.eyeColor === updates.avatarEyeColor));
-          if (scBtn) customizerEl.querySelectorAll('[data-shirt-color]').forEach(b => b.classList.toggle('active', b.dataset.shirtColor === updates.avatarShirtColor));
-          rerenderAvatar();
-        });
-      }
+        const currentStyle = profileUser.avatar_style || 'adventurer';
+        const currentSeed  = profileUser.avatar_seed  || (profileUser.username || 'user');
+        customizerEl.innerHTML = `
+          <div class="avatar-controls">
+            <div class="avatar-style-mini" id="avatarStyleMini">
+              ${AVATAR_STYLES.map(s => `
+                <button type="button" class="style-mini-btn${s.id === currentStyle ? ' active' : ''}" data-style="${s.id}" title="${s.label}">
+                  <img src="${dicebearUrl(currentSeed, s.id, currentSeed)}" alt="${s.label}" />
+                </button>
+              `).join('')}
+            </div>
+            <div class="avatar-seed-row">
+              <button type="button" class="btn btn-outline btn-sm" id="randomizeAvatarBtn">🎲 Randomize</button>
+              <button type="button" class="btn btn-primary btn-sm" id="saveAvatarBtn">Save</button>
+            </div>
+          </div>
+        `;
 
-      if (isOwn && achievementsEl) {
-        achievementsEl.addEventListener('click', e => {
-          const btn = e.target.closest('[data-equip]');
+        let liveStyle = currentStyle;
+        let liveSeed  = currentSeed;
+
+        const miniPicker = customizerEl.querySelector('#avatarStyleMini');
+        miniPicker.addEventListener('click', e => {
+          const btn = e.target.closest('[data-style]');
           if (!btn) return;
-          const cosmetic = btn.dataset.equip;
-          const slot = btn.dataset.slot;
-          if (!unlockedCosmetics.includes(cosmetic)) return;
-          const u = load(STORAGE_KEYS.users)?.find(x => String(x.id) === profileUserId);
-          if (!u) return;
-          const slotKey = 'equipped' + slot.charAt(0).toUpperCase() + slot.slice(1);
-          updateAvatarSettings(profileUserId, { [slotKey]: u[slotKey] === cosmetic ? null : cosmetic });
-          rerenderAvatar();
-          rerenderAchievements();
+          liveStyle = btn.dataset.style;
+          miniPicker.querySelectorAll('.style-mini-btn').forEach(b => b.classList.toggle('active', b.dataset.style === liveStyle));
+          if (avatarEl) avatarEl.innerHTML = `<img src="${dicebearUrl(liveSeed, liveStyle, liveSeed)}" class="avatar-svg" alt="avatar" />`;
+        });
+
+        customizerEl.querySelector('#randomizeAvatarBtn').addEventListener('click', () => {
+          liveSeed = AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)] + Math.floor(Math.random() * 999);
+          if (avatarEl) avatarEl.innerHTML = `<img src="${dicebearUrl(liveSeed, liveStyle, liveSeed)}" class="avatar-svg" alt="avatar" />`;
+          miniPicker.querySelectorAll('.style-mini-btn img').forEach(img => {
+            const s = img.closest('[data-style]').dataset.style;
+            img.src = dicebearUrl(liveSeed, s, liveSeed);
+          });
+        });
+
+        customizerEl.querySelector('#saveAvatarBtn').addEventListener('click', () => {
+          fetch(`${API_BASE}/users/${profileUser.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar_style: liveStyle, avatar_seed: liveSeed })
+          }).then(r => r.json()).then(updated => {
+            if (updated.error) { alert(updated.error); return; }
+            profileUser.avatar_style = updated.avatar_style;
+            profileUser.avatar_seed  = updated.avatar_seed;
+            const session = getSessionUser();
+            if (session && String(session.id) === String(profileUser.id)) {
+              setSessionUser({ ...session, avatar_style: updated.avatar_style, avatar_seed: updated.avatar_seed });
+              // Update navbar avatar img without a full re-render
+              const navAvatarImg = document.getElementById('avatarBtn');
+              if (navAvatarImg) navAvatarImg.src = dicebearUrl(updated.username || session.username, updated.avatar_style, updated.avatar_seed);
+            }
+          }).catch(() => alert('Failed to save avatar.'));
         });
       }
 
@@ -1701,26 +1531,48 @@
     if (form.fullName) form.fullName.value = fullUser.fullName || '';
     if (form.email) form.email.value = fullUser.email || '';
     if (form.username) form.username.value = fullUser.username || '';
-    if (form.avatarUrl) form.avatarUrl.value = fullUser.avatarUrl || '';
+
+    const stylePicker = document.getElementById('avatarStylePicker');
+    const styleInput  = document.getElementById('avatarStyle');
+    const currentStyle = fullUser.avatar_style || 'adventurer';
+    if (styleInput) styleInput.value = currentStyle;
+    if (stylePicker) {
+      stylePicker.innerHTML = AVATAR_STYLES.map(s => `
+        <button type="button" class="style-option${s.id === currentStyle ? ' active' : ''}" data-style="${s.id}" title="${s.label}">
+          <img src="${dicebearUrl(fullUser.username || 'user', s.id)}" alt="${s.label}" />
+          <span>${s.label}</span>
+        </button>
+      `).join('');
+      stylePicker.addEventListener('click', e => {
+        const btn = e.target.closest('[data-style]');
+        if (!btn) return;
+        stylePicker.querySelectorAll('.style-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (styleInput) styleInput.value = btn.dataset.style;
+      });
+    }
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      const fullName = (form.fullName && form.fullName.value || '').trim();
-      const email = (form.email && form.email.value || '').trim();
-      const username = (form.username && form.username.value || '').trim();
+      const fullName    = (form.fullName && form.fullName.value || '').trim();
+      const email       = (form.email && form.email.value || '').trim();
+      const username    = (form.username && form.username.value || '').trim();
+      const avatar_style = styleInput ? styleInput.value : 'adventurer';
       if (!fullName || !email || !username) { alert('Please fill required fields.'); return; }
       if (!validateEmail(email)) { alert('Invalid email.'); return; }
-      const users = load(STORAGE_KEYS.users) || [];
-      const others = users.filter(u => u.id !== user.id);
-      if (others.some(u => (u.email || '').toLowerCase() === email.toLowerCase())) { alert('Email already in use.'); return; }
-      if (others.some(u => (u.username || '').toLowerCase() === username.toLowerCase())) { alert('Username already taken.'); return; }
-      fullUser.fullName = fullName;
-      fullUser.email = email;
-      fullUser.username = username;
-      fullUser.avatarUrl = (form.avatarUrl && form.avatarUrl.value || '').trim() || '';
-      save(STORAGE_KEYS.users, users);
-      setSessionUser({ ...user, fullName, email, username });
-      alert('Profile updated.');
+
+      fetch(`${API_BASE}/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, avatar_style })
+      })
+        .then(r => r.json())
+        .then(updated => {
+          if (updated.error) { alert(updated.error); return; }
+          setSessionUser({ ...user, fullName, email, username, avatar_style: updated.avatar_style });
+          alert('Profile updated.');
+        })
+        .catch(() => alert('Failed to save. Please try again.'));
     });
 
     const pwForm = document.getElementById('changePasswordForm');
@@ -1773,16 +1625,11 @@
     }
     if (!admin) return;
 
-    const reports = load(STORAGE_KEYS.reports) || [];
-    const prompts = load(STORAGE_KEYS.prompts) || [];
-    const users = load(STORAGE_KEYS.users) || [];
-
-    function render() {
-      const list = reports.map(r => {
-        const p = prompts.find(x => x.id === r.promptId);
-        const u = users.find(x => x.id === r.userId);
-        return { ...r, prompt: p, reporter: u };
-      }).filter(r => r.prompt);
+    async function render() {
+      let reports = [];
+      try {
+        reports = await fetch(API_BASE + '/reports').then(r => r.ok ? r.json() : []);
+      } catch (_) {}
 
       container.innerHTML = `
         <h1 class="h2 mb-3">Moderation</h1>
@@ -1792,15 +1639,15 @@
               <tr><th>Prompt</th><th>Reported by</th><th>Reason</th><th>Date</th><th>Actions</th></tr>
             </thead>
             <tbody>
-              ${list.length ? list.map(r => `
-                <tr data-report-id="${r.id}" data-prompt-id="${r.promptId}" data-user-id="${r.prompt.userId}">
-                  <td><a href="${base}pages/prompt.html?id=${r.promptId}">${escapeHtml(r.prompt.title)}</a></td>
-                  <td>${escapeHtml(r.reporter ? r.reporter.username : '')}</td>
+              ${reports.length ? reports.map(r => `
+                <tr data-report-id="${r.id}" data-prompt-id="${r.prompt_id || ''}" data-prompt-title="${escapeHtmlAttr(r.prompt_title || '')}">
+                  <td>${r.prompt_id ? `<a href="${base}pages/prompt.html?id=${r.prompt_id}">${escapeHtml(r.prompt_title || '')}</a>` : escapeHtml(r.reported_username || '')}</td>
+                  <td>${escapeHtml(r.reporter_username || '')}</td>
                   <td>${escapeHtml(r.reason)}</td>
-                  <td>${formatDate(r.createdAt)}</td>
+                  <td>${formatDate(r.created_at)}</td>
                   <td class="actions">
-                    <button type="button" class="btn btn-danger btn-sm btn-remove-prompt">Remove prompt</button>
-                    <button type="button" class="btn btn-outline btn-sm btn-ban-user">Ban user</button>
+                    ${r.prompt_id ? '<button type="button" class="btn btn-danger btn-sm btn-remove-prompt">Remove prompt</button>' : ''}
+                    <button type="button" class="btn btn-outline btn-sm btn-dismiss-report" data-id="${r.id}">Dismiss</button>
                   </td>
                 </tr>
               `).join('') : '<tr><td colspan="5">No reports.</td></tr>'}
@@ -1810,25 +1657,30 @@
       `;
 
       container.querySelectorAll('.btn-remove-prompt').forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', async function () {
           const row = this.closest('tr');
-          const promptId = row.getAttribute('data-prompt-id');
-          const prompts = load(STORAGE_KEYS.prompts) || [];
-          const p = prompts.find(x => x.id === promptId);
-          if (p) { p.removed = true; save(STORAGE_KEYS.prompts, prompts); }
-          const reports = load(STORAGE_KEYS.reports) || [];
-          const newReports = reports.filter(r => r.promptId !== promptId);
-          save(STORAGE_KEYS.reports, newReports);
+          const promptId = parseInt(row.getAttribute('data-prompt-id'), 10);
+          if (!Number.isNaN(promptId)) {
+            try {
+              await fetch(API_BASE + '/prompts/' + promptId, { method: 'DELETE' });
+              // Clean local cache
+              const cached = load(STORAGE_KEYS.prompts) || [];
+              save(STORAGE_KEYS.prompts, cached.filter(p => String(p.id) !== String(promptId)));
+            } catch (err) {
+              console.error('Remove prompt failed:', err.message);
+            }
+          }
           render();
         });
       });
-      container.querySelectorAll('.btn-ban-user').forEach(btn => {
-        btn.addEventListener('click', function () {
-          const row = this.closest('tr');
-          const userId = row.getAttribute('data-user-id');
-          const users = load(STORAGE_KEYS.users) || [];
-          const u = users.find(x => x.id === userId);
-          if (u) { u.banned = true; save(STORAGE_KEYS.users, users); }
+      container.querySelectorAll('.btn-dismiss-report').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const rid = this.getAttribute('data-id');
+          try {
+            await fetch(API_BASE + '/reports/' + rid, { method: 'DELETE' });
+          } catch (err) {
+            console.error('Dismiss report failed:', err.message);
+          }
           render();
         });
       });
