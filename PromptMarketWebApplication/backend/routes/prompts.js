@@ -12,6 +12,18 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+function handleUpload(req, res, next) {
+  upload.single('thumbnail')(req, res, function (err) {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Thumbnail must be under 5 MB.' });
+      }
+      return res.status(400).json({ error: 'File upload failed.' });
+    }
+    next();
+  });
+}
+
 function parseTagsValue(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(String).map(s => s.trim()).filter(Boolean);
@@ -54,8 +66,8 @@ const SELECT_PROMPTS_SQL = `
     p.thumbnail_url,
     p.thumbnail_mime_type,
     p.created_at,
-    COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) AS upvotes,
-    COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0) AS downvotes,
+    COUNT(DISTINCT IF(v.value = 1, v.user_id, NULL)) AS upvotes,
+    COUNT(DISTINCT IF(v.value = -1, v.user_id, NULL)) AS downvotes,
     COUNT(DISTINCT cmt.id) AS comment_count,
     COUNT(DISTINCT s.user_id) AS save_count,
     COALESCE(
@@ -241,7 +253,7 @@ router.get('/:id/thumbnail', async (req, res) => {
 
 // POST /api/prompts
 // Create a new prompt.
-router.post('/', upload.single('thumbnail'), async (req, res) => {
+router.post('/', handleUpload, async (req, res) => {
   // For multipart/form-data, the text fields are in req.body and the file is in req.file.
   const { title, description, content, model, author_id, category_id, tags } = req.body || {};
 
@@ -322,7 +334,7 @@ router.post('/', upload.single('thumbnail'), async (req, res) => {
 });
 
 // PUT /api/prompts/:id
-router.put('/:id', upload.single('thumbnail'), async (req, res) => {
+router.put('/:id', handleUpload, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'Invalid prompt id.' });

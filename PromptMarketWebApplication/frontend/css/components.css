@@ -246,6 +246,11 @@
   border-color: var(--secondary);
   color: var(--secondary);
 }
+.btn-outline.voted {
+  background: var(--secondary);
+  color: #fff;
+  border-color: var(--secondary);
+}
 
 .btn-danger {
   background: linear-gradient(135deg, #C62828, #E53935);

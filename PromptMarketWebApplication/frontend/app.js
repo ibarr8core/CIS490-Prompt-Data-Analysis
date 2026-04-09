@@ -496,7 +496,9 @@
           username: apiUser.username,
           fullName: apiUser.username,
           email: apiUser.email,
-          role: apiUser.role
+          role: apiUser.role,
+          avatar_style: apiUser.avatar_style || 'adventurer',
+          avatar_seed: apiUser.avatar_seed || null
         });
         window.location.href = base + 'pages/explore.html';
       } catch (_) {
@@ -856,14 +858,14 @@
         <p class="text-muted text-small">${userChip(prompt.userId, (creator && creator.username) || prompt.creatorName || 'Unknown', prompt.creatorAvatarStyle, prompt.creatorAvatarSeed, base)} · ${formatDate(prompt.createdAt)}</p>
         <p>${escapeHtml(prompt.description || '')}</p>
         <div class="prompt-stats mb-2">
-          <span class="stat-chip">↑ ${(score > 0 ? score : 0)}</span>
-          <span class="stat-chip">↓ ${(score < 0 ? -score : 0)}</span>
+          <span class="stat-chip">↑ ${promptUpvotes}</span>
+          <span class="stat-chip">↓ ${promptDownvotes}</span>
           <span class="stat-chip">💬 ${commentCount}</span>
         </div>
         <div class="prompt-content-box mb-3">${escapeHtml(prompt.content || '')}</div>
         <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
-          <button type="button" class="btn btn-outline btn-sm" id="btnUpvote" data-vote="1">↑ Upvote</button>
-          <button type="button" class="btn btn-outline btn-sm" id="btnDownvote" data-vote="-1">↓ Downvote</button>
+          <button type="button" class="btn btn-outline btn-sm ${myVoteValue === 1 ? 'voted' : ''}" id="btnUpvote" data-vote="1">↑ Upvote</button>
+          <button type="button" class="btn btn-outline btn-sm ${myVoteValue === -1 ? 'voted' : ''}" id="btnDownvote" data-vote="-1">↓ Downvote</button>
           <button type="button" class="btn btn-outline btn-sm ${saved ? 'saved' : ''}" id="btnSave">${saved ? '★ Saved' : '☆ Save'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnFollow">${following ? 'Following' : 'Follow creator'}</button>
           <button type="button" class="btn btn-outline btn-sm" id="btnReport">Report</button>
@@ -906,11 +908,21 @@
     async function applyVote(vote) {
       if (!requireLogin('Login required to vote.')) return;
       try {
-        await fetch(API_BASE + '/votes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userIdInt, prompt_id: promptIdInt, value: vote })
-        });
+        if (myVoteValue === vote) {
+          // Same vote clicked again — toggle off
+          await fetch(API_BASE + '/votes', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userIdInt, prompt_id: promptIdInt })
+          });
+        } else {
+          // New vote or switching direction
+          await fetch(API_BASE + '/votes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userIdInt, prompt_id: promptIdInt, value: vote })
+          });
+        }
       } catch (err) {
         console.error('Vote failed:', err.message);
       }
@@ -1200,6 +1212,10 @@
       const thumbnailFile =
         (form.thumbnailFile && form.thumbnailFile.files && form.thumbnailFile.files[0]) ? form.thumbnailFile.files[0] : null;
 
+      if (thumbnailFile && thumbnailFile.size > 5 * 1024 * 1024) {
+        if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Thumbnail must be under 5 MB.'; msgEl.style.display = 'block'; }
+        return;
+      }
       if (!title) {
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Title is required.'; msgEl.style.display = 'block'; }
         return;
@@ -1320,13 +1336,28 @@
         return;
       }
 
-      const prompts = load(STORAGE_KEYS.prompts) || [];
+      // Fetch all profile data from API in parallel (use profileUserId, not logged-in user.id)
+      let prompts = [];
       let followerCount = 0;
       let followingCount = 0;
+      let votes = [];
+      let saves = [];
+      let myComments = [];
       try {
-        const followData = await fetch(API_BASE + '/follows?user_id=' + profileUserId).then(r => r.ok ? r.json() : { followers: [], following: [] });
+        const [followData, allPromptsRaw, votesRaw, savesRaw, commentsRaw] = await Promise.all([
+          fetch(API_BASE + '/follows?user_id=' + profileUserId).then(r => r.ok ? r.json() : { followers: [], following: [] }),
+          apiFetchJson('/prompts').catch(() => []),
+          fetch(API_BASE + '/votes?user_id=' + profileUserId).then(r => r.ok ? r.json() : []),
+          fetch(API_BASE + '/saves?user_id=' + profileUserId).then(r => r.ok ? r.json() : []),
+          fetch(API_BASE + '/comments?author_id=' + profileUserId).then(r => r.ok ? r.json() : []),
+        ]);
         followerCount = (followData.followers || []).length;
         followingCount = (followData.following || []).length;
+        prompts = (allPromptsRaw || []).map(mapBackendPromptToLocal);
+        save(STORAGE_KEYS.prompts, prompts);
+        votes = votesRaw || [];
+        saves = savesRaw || [];
+        myComments = commentsRaw || [];
       } catch (_) {}
 
       if (!container) return;
@@ -1342,34 +1373,12 @@
       if (profileNameEl) profileNameEl.textContent = profileUser.username || profileUser.fullName;
       if (profileStatsEl) profileStatsEl.textContent = `${followerCount} followers · ${followingCount} following`;
 
-      let votes = [];
-      let saves = [];
-      let comments = [];
-      try {
-        await Promise.all([
-          fetch(API_BASE + '/votes?user_id=' + user.id).then(r => r.ok ? r.json() : []).then(rows => { votes = rows || []; }),
-          fetch(API_BASE + '/saves?user_id=' + user.id).then(r => r.ok ? r.json() : []).then(rows => { saves = rows || []; }),
-          // Comments by the profile user — fetched per-prompt below after we know myPrompts
-        ]);
-      } catch (_) {}
-
-      const myPrompts = prompts.filter(p => String(p.userId) === profileUserId && !p.removed);
-
-      // Fetch comments by the profile user across their prompts
-      for (const p of myPrompts) {
-        try {
-          const pid = parseInt(p.id, 10);
-          if (!Number.isNaN(pid)) {
-            const rows = await fetch(API_BASE + '/comments?prompt_id=' + pid).then(r => r.ok ? r.json() : []);
-            comments.push(...(rows || []).filter(c => String(c.author_id) === profileUserId));
-          }
-        } catch (_) {}
-      }
-
-      const myComments = comments;
-      const mySaved = (saves.map(s => prompts.find(p => String(p.id) === String(s.prompt_id)))).filter(Boolean).filter(p => !p.removed);
-      const myUpvoted = (votes.filter(v => v.value === 1).map(v => prompts.find(p => String(p.id) === String(v.prompt_id)))).filter(Boolean).filter(p => !p.removed);
-      const myDownvoted = (votes.filter(v => v.value === -1).map(v => prompts.find(p => String(p.id) === String(v.prompt_id)))).filter(Boolean).filter(p => !p.removed);
+      const myPrompts = prompts.filter(p => String(p.userId) === String(profileUserId));
+      const promptsById = {};
+      prompts.forEach(p => { promptsById[String(p.id)] = p; });
+      const mySaved = saves.map(s => promptsById[String(s.prompt_id)]).filter(Boolean);
+      const myUpvoted = votes.filter(v => v.value === 1).map(v => promptsById[String(v.prompt_id)]).filter(Boolean);
+      const myDownvoted = votes.filter(v => v.value === -1).map(v => promptsById[String(v.prompt_id)]).filter(Boolean);
 
       function renderPromptList(arr, el) {
         if (!el) return;
