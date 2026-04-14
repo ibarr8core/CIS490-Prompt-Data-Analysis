@@ -1,5 +1,6 @@
 // backend/server.js
 // Main Express server for the Prompt Marketplace project.
+require('dotenv').config();
 // - Serves the existing frontend as static files (except GET /)
 // - Exposes /api/* endpoints
 // - Database initialization is optional and never blocks HTTP bind
@@ -17,6 +18,7 @@ const savesRouter = require('./routes/saves');
 const commentsRouter = require('./routes/comments');
 const followsRouter = require('./routes/follows');
 const reportsRouter = require('./routes/reports');
+const aiRouter = require('./routes/ai');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,6 +26,7 @@ const port = process.env.PORT || 3000;
 console.log('[startup] PromptMarket server loading...');
 console.log('[startup] NODE_ENV:', process.env.NODE_ENV || '(not set)');
 console.log('[startup] Effective PORT:', port);
+console.log('[startup] GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? `set (starts with ${process.env.GEMINI_API_KEY.slice(0, 8)}...)` : 'NOT SET');
 
 app.use(express.json());
 app.use(cors());
@@ -37,6 +40,7 @@ app.use('/api/saves', savesRouter);
 app.use('/api/comments', commentsRouter);
 app.use('/api/follows', followsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/ai', aiRouter);
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html')));
 

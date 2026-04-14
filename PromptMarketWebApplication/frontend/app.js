@@ -1124,8 +1124,94 @@
     const msgEl = document.getElementById('createPromptMessage');
     const backendDemoCard = document.getElementById('backendPromptsDemo');
     const backendListEl = document.getElementById('backendPromptsList');
+    const aiBadgeEl = document.getElementById('aiValidationResult');
     const base = getBase();
     if (!form) return;
+
+    // --- AI validation state ---
+    // Tracks the result of the last completed AI check so the submit handler
+    // can block without firing a redundant API call.
+    let aiState = {
+      checked: false,      // has a check been run for the current content?
+      allowed: null,       // null = unknown, true = allowed, false = blocked
+      message: '',
+      contentChecked: ''   // the content string that was last checked
+    };
+
+    /** Render the AI badge in one of four visual states. */
+    function showAiBadge(state, message) {
+      if (!aiBadgeEl) return;
+      const icons = { checking: '⚙', ok: '✅', error: '❌', warn: '⚠️' };
+      aiBadgeEl.innerHTML = `
+        <div class="ai-badge ai-badge--${state}">
+          <span class="ai-badge__icon">${icons[state] || ''}</span>
+          <span class="ai-badge__text"><strong>AI Check:</strong> ${escapeHtml(message)}</span>
+        </div>`;
+    }
+
+    function clearAiBadge() {
+      if (aiBadgeEl) aiBadgeEl.innerHTML = '';
+    }
+
+    /**
+     * Calls POST /api/ai/validate and updates aiState + the badge.
+     * Returns true if the prompt is allowed, false if blocked.
+     * On any network/API error it fails-open (returns true).
+     */
+    async function runAiCheck() {
+      const title   = (form.title   && form.title.value   || '').trim();
+      const desc    = (form.description && form.description.value || '').trim();
+      const content = (form.content && form.content.value || '').trim();
+
+      if (!content) {
+        clearAiBadge();
+        aiState = { checked: false, allowed: null, message: '', contentChecked: '' };
+        return true; // nothing to check yet
+      }
+
+      // Skip repeat call if content hasn't changed since last check
+      if (aiState.checked && aiState.contentChecked === content) {
+        return aiState.allowed !== false;
+      }
+
+      showAiBadge('checking', 'Validating your prompt…');
+
+      try {
+        const res = await fetch(API_BASE + '/ai/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description: desc, content })
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        aiState = {
+          checked: true,
+          allowed: data.allowed !== false,
+          message: data.message || '',
+          contentChecked: content
+        };
+
+        if (data.allowed === false) {
+          showAiBadge('error', data.message || 'AI flagged this prompt. Please revise it.');
+          return false;
+        } else if (data.reason === 'error') {
+          // AI check failed — fail-open with a neutral notice
+          showAiBadge('warn', 'AI check unavailable. You may proceed, but please ensure your prompt is original and valid.');
+          return true;
+        } else {
+          showAiBadge('ok', data.message || 'Prompt looks good!');
+          return true;
+        }
+      } catch (err) {
+        console.warn('[AI validate] Check failed:', err.message);
+        // Fail-open on network/parse errors
+        aiState = { checked: true, allowed: true, message: '', contentChecked: content };
+        showAiBadge('warn', 'AI check could not be reached. Proceeding without validation.');
+        return true;
+      }
+    }
 
     apiFetchJson('/categories')
       .then(function (rows) {
@@ -1158,6 +1244,15 @@
       fakeUpload.addEventListener('click', function () {
         const fileInput = document.getElementById('thumbnailFile');
         if (fileInput) fileInput.click();
+      });
+    }
+
+    // Trigger AI check when user finishes typing in the content box
+    const contentArea = document.getElementById('content');
+    if (contentArea) {
+      contentArea.addEventListener('blur', function () {
+        const val = (this.value || '').trim();
+        if (val.length > 10) runAiCheck(); // only fire on non-trivially-empty input
       });
     }
 
@@ -1231,6 +1326,20 @@
       if (!model) {
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Please select an AI model.'; msgEl.style.display = 'block'; }
         return;
+      }
+
+      // --- AI validation gate (hard block) ---
+      // Always run (or re-use cached) AI check before allowing the POST.
+      const aiAllowed = await runAiCheck();
+      if (!aiAllowed) {
+        // Badge already shows the error; scroll to it so the user sees it.
+        if (aiBadgeEl) aiBadgeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (msgEl) {
+          msgEl.className = 'msg msg-error';
+          msgEl.textContent = 'Your prompt was blocked by the AI validator. Please revise it and try again.';
+          msgEl.style.display = 'block';
+        }
+        return; // hard block — do not proceed
       }
 
       const tags = (form.tags && form.tags.value || '').trim().split(/[\s,]+/).filter(Boolean);
