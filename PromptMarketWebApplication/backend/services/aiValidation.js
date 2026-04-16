@@ -7,8 +7,8 @@
 
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// gemini-2.5-flash: available on v1 API with free tier access
-const MODEL_NAME = 'gemini-2.5-flash';
+// gemini-2.5-flash-lite: lighter/cheaper variant, available on free tier
+const MODEL_NAME = 'gemini-2.5-flash-lite';
 
 // Similarity threshold (0–1). Prompts scoring at or above this are blocked.
 const SIMILARITY_THRESHOLD = 0.75;

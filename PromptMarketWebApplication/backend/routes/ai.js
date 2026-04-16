@@ -24,7 +24,7 @@ router.post('/validate', async (req, res) => {
     let existingPrompts = [];
     try {
       const [rows] = await pool.query(
-        'SELECT id, title, LEFT(content, 150) AS content FROM prompts ORDER BY created_at DESC LIMIT 30'
+        'SELECT id, title, LEFT(content, 150) AS content FROM prompts ORDER BY created_at DESC LIMIT 15'
       );
       existingPrompts = rows || [];
     } catch (dbErr) {
