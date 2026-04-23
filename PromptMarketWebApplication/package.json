@@ -1,7 +1,7 @@
 {
-  "name": "prompt-market-web-application",
+  "name": "pawprompt-web-application",
   "version": "1.0.0",
-  "description": "Prompt Marketplace web application with Node.js, Express, and MySQL backend.",
+  "description": "PawPrompt web application with Node.js, Express, and MySQL backend.",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
