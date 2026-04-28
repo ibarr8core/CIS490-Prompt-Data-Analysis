@@ -202,6 +202,7 @@
 .form-textarea { min-height: 100px; resize: vertical; }
 .form-hint  { font-size: 0.8rem; color: var(--muted);   margin-top: 0.3rem; }
 .form-error { font-size: 0.8rem; color: #D32F2F; margin-top: 0.3rem; font-weight: 600; }
+.required-marker { color: #C62828; font-weight: 700; }
 
 /* ============================================
    BUTTONS
@@ -453,7 +454,8 @@
   color: var(--text);
 }
 .filter-panel label:hover { background: rgba(0, 98, 165, 0.06); color: var(--secondary); }
-.filter-panel input[type="radio"] { accent-color: var(--secondary); }
+.filter-panel input[type="radio"],
+.filter-panel input[type="checkbox"] { accent-color: var(--secondary); }
 
 /* ============================================
    ACHIEVEMENTS PANEL (profile)

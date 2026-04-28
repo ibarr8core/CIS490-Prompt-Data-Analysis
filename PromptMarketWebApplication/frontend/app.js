@@ -9,6 +9,7 @@
     prompts: 'prompts',
     resetToken: 'resetToken'
   };
+  const AUTH_RETURN_KEY = 'authReturnTo';
   const API_BASE_URL = (
     (window.PROMPTMARKET_CONFIG && window.PROMPTMARKET_CONFIG.API_BASE_URL) ||
     window.API_BASE_URL ||
@@ -91,7 +92,14 @@
   }
 
   function getSessionUser() {
-    return load(STORAGE_KEYS.sessionUser);
+    const user = load(STORAGE_KEYS.sessionUser);
+    if (!user) return null;
+    const idInt = parseInt(user.id, 10);
+    if (Number.isNaN(idInt) || idInt <= 0) {
+      logout();
+      return null;
+    }
+    return user;
   }
 
   function setSessionUser(user) {
@@ -102,10 +110,41 @@
     localStorage.removeItem(STORAGE_KEYS.sessionUser);
   }
 
+  function getExploreUrl() {
+    return getBase() + 'pages/explore.html';
+  }
+
+  function storeAuthReturn(url) {
+    try { sessionStorage.setItem(AUTH_RETURN_KEY, url); } catch (_) {}
+  }
+
+  function readAndClearAuthReturn() {
+    try {
+      const value = sessionStorage.getItem(AUTH_RETURN_KEY);
+      sessionStorage.removeItem(AUTH_RETURN_KEY);
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function buildLoginRedirectUrl(nextUrl) {
+    const loginUrl = getBase() + 'pages/login.html';
+    if (!nextUrl) return loginUrl;
+    return loginUrl + '?next=' + encodeURIComponent(nextUrl);
+  }
+
+  function redirectToLogin(nextUrl) {
+    const target = nextUrl || (window.location.pathname + window.location.search);
+    storeAuthReturn(target);
+    window.location.href = buildLoginRedirectUrl(target);
+  }
+
   function requireAuth(redirectTo) {
     const user = getSessionUser();
     if (!user) {
-      window.location.href = redirectTo || (getBase() + 'pages/login.html');
+      if (redirectTo) window.location.href = redirectTo;
+      else redirectToLogin();
       return null;
     }
     if (user.banned) {
@@ -344,12 +383,19 @@
   function getPromptsFiltered(opts) {
     let prompts = (load(STORAGE_KEYS.prompts) || []).filter(p => !p.removed);
     const users = load(STORAGE_KEYS.users) || [];
-    const model = (opts && opts.model) || 'All';
-    const category = opts && opts.category;
+    const models = (opts && opts.models) || [];
+    const categories = (opts && opts.categories) || [];
+    const tags = (opts && opts.tags) || [];
     const query = (opts && opts.query) || '';
 
-    if (model && model !== 'All') prompts = prompts.filter(p => p.model === model);
-    if (category) prompts = prompts.filter(p => p.category === category);
+    if (models.length && !models.includes('All')) prompts = prompts.filter(p => models.includes(p.model));
+    if (categories.length) prompts = prompts.filter(p => categories.includes(p.category));
+    if (tags.length) {
+      prompts = prompts.filter(p => {
+        const promptTags = (p.tags || []).map(t => String(t).toLowerCase());
+        return tags.some(tag => promptTags.includes(String(tag).toLowerCase()));
+      });
+    }
     if (query) {
       const q = query.toLowerCase();
       prompts = prompts.filter(p =>
@@ -471,6 +517,16 @@
     const registerLink = document.getElementById('registerLinkLogin');
     if (forgotLink) forgotLink.href = base + 'pages/forgotpassword.html';
     if (registerLink) registerLink.href = base + 'pages/register.html';
+    const params = new URLSearchParams(window.location.search);
+    const explicitNext = params.get('next');
+    if (explicitNext) storeAuthReturn(explicitNext);
+
+    if (!document.getElementById('loginCancelLink')) {
+      const cancelWrap = document.createElement('p');
+      cancelWrap.className = 'text-small';
+      cancelWrap.innerHTML = '<a href="' + getExploreUrl() + '" id="loginCancelLink">Cancel and return to Explore</a>';
+      form.insertAdjacentElement('afterend', cancelWrap);
+    }
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
@@ -500,7 +556,8 @@
           avatar_style: apiUser.avatar_style || 'adventurer',
           avatar_seed: apiUser.avatar_seed || null
         });
-        window.location.href = base + 'pages/explore.html';
+        const returnTo = readAndClearAuthReturn() || explicitNext;
+        window.location.href = returnTo || (base + 'pages/explore.html');
       } catch (_) {
         if (msg) { msg.textContent = 'Invalid email/username or password.'; msg.style.display = 'block'; }
       }
@@ -624,6 +681,7 @@
     const creatorsEl = document.getElementById('exploreCreators');
     const filterModel = document.getElementById('filterModel');
     const filterCategory = document.getElementById('filterCategory');
+    const filterTags = document.getElementById('filterTags');
     const sortSelect = document.getElementById('sortSelect');
     const navSearch = document.getElementById('navSearch');
 
@@ -641,6 +699,7 @@
         if (opts && opts.query) params.set('q', opts.query);
         const backendPrompts = await apiFetchJson('/prompts' + (params.toString() ? '?' + params.toString() : ''));
         save(STORAGE_KEYS.prompts, (backendPrompts || []).map(mapBackendPromptToLocal));
+        renderTagFilter();
       } catch (e) {
         console.error('Error loading prompts from backend:', e.message);
       }
@@ -684,8 +743,8 @@
         btn.addEventListener('click', async function (e) {
           e.stopPropagation();
           const user = getSessionUser();
-          if (!user) { alert('Login required to save prompts.'); window.location.href = base + 'pages/login.html'; return; }
           const pid = this.getAttribute('data-prompt-id');
+          if (!user) { redirectToLogin(base + 'pages/prompt.html?id=' + encodeURIComponent(pid)); return; }
           const alreadySaved = _savedPromptIds.has(pid);
           try {
             await fetch(API_BASE + '/saves', {
@@ -704,16 +763,47 @@
     }
 
     function getExploreOpts() {
-      const model = filterModel && filterModel.querySelector('input:checked');
-      const category = filterCategory && filterCategory.querySelector('input:checked');
+      const modelValues = filterModel
+        ? Array.from(filterModel.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value)
+        : [];
+      const categoryValues = filterCategory
+        ? Array.from(filterCategory.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value)
+        : [];
+      const tagValues = filterTags
+        ? Array.from(filterTags.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value)
+        : [];
       const sortBy = sortSelect && sortSelect.value || 'trending';
       const q = (navSearch && navSearch.value || '').trim() || (new URLSearchParams(window.location.search).get('q') || '');
       return {
-        model: model && model.value,
-        category: category && category.value,
+        models: modelValues,
+        categories: categoryValues,
+        tags: tagValues,
         sortBy,
         query: q
       };
+    }
+
+    function renderTagFilter() {
+      if (!filterTags) return;
+      const prompts = load(STORAGE_KEYS.prompts) || [];
+      const selected = new Set(
+        Array.from(filterTags.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value.toLowerCase())
+      );
+      const tagSet = new Set();
+      prompts.forEach(p => (p.tags || []).forEach(t => {
+        const clean = String(t || '').trim();
+        if (clean) tagSet.add(clean);
+      }));
+      const tags = Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+      filterTags.innerHTML = tags.length
+        ? tags.map(tag => {
+            const checked = selected.has(tag.toLowerCase()) ? 'checked' : '';
+            return '<label><input type="checkbox" value="' + escapeHtmlAttr(tag) + '" ' + checked + '> ' + escapeHtml(tag) + '</label>';
+          }).join('')
+        : '<p class="text-small text-muted mb-0">No tags yet.</p>';
+      filterTags.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', () => { renderPrompts(getExploreOpts()); });
+      });
     }
 
     const users = load(STORAGE_KEYS.users) || [];
@@ -742,6 +832,7 @@
 
     const initialQ = new URLSearchParams(window.location.search).get('q');
     if (navSearch && initialQ) navSearch.value = initialQ;
+    renderTagFilter();
     renderPrompts(getExploreOpts());
   }
 
@@ -843,7 +934,7 @@
     function requireLogin(msg) {
       if (!user) {
         alert(msg + ' Please log in.');
-        window.location.href = base + 'pages/login.html';
+        redirectToLogin(base + 'pages/prompt.html?id=' + encodeURIComponent(prompt.id));
         return false;
       }
       return true;
@@ -877,25 +968,83 @@
       <div class="card">
         <h3>Comments</h3>
         <div id="promptCommentsPreview"></div>
+        <div id="promptCommentFormWrap" class="mt-2">
+          <form id="promptCommentForm">
+            <div class="form-group mb-1">
+              <textarea id="promptCommentBody" name="promptCommentBody" class="form-textarea" rows="3" placeholder="Write a comment..."></textarea>
+              <div id="promptCommentError" class="form-error" style="display:none;"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Submit Comment</button>
+          </form>
+        </div>
         <a href="${base}pages/comments.html?promptId=${prompt.id}" class="btn btn-outline btn-sm mt-2">View all comments</a>
       </div>
     `;
 
     const preview = document.getElementById('promptCommentsPreview');
+    const promptCommentForm = document.getElementById('promptCommentForm');
+    const promptCommentError = document.getElementById('promptCommentError');
+    const promptCommentFormWrap = document.getElementById('promptCommentFormWrap');
+    let promptComments = [];
+    function renderPreviewComments() {
+      const top3 = (promptComments || []).slice(0, 3);
+      if (!preview) return;
+      preview.innerHTML = top3.length ? top3.map(c => `
+        <div class="comment-item">
+          <div class="comment-author">${userChip(c.author_id, c.author_username || 'User', c.avatar_style, c.avatar_seed, base)}</div>
+          <div class="comment-body">${escapeHtml(c.content)}</div>
+          <div class="comment-meta">${formatDate(c.created_at)}</div>
+        </div>
+      `).join('') : '<p class="text-muted">No comments yet.</p>';
+    }
     if (preview && !Number.isNaN(promptIdInt)) {
       fetch(API_BASE + '/comments?prompt_id=' + promptIdInt)
         .then(r => r.ok ? r.json() : [])
         .then(comments => {
-          const top3 = (comments || []).slice(0, 3);
-          preview.innerHTML = top3.length ? top3.map(c => `
-            <div class="comment-item">
-              <div class="comment-author">${userChip(c.author_id, c.author_username || 'User', c.avatar_style, c.avatar_seed, base)}</div>
-              <div class="comment-body">${escapeHtml(c.content)}</div>
-              <div class="comment-meta">${formatDate(c.created_at)}</div>
-            </div>
-          `).join('') : '<p class="text-muted">No comments yet.</p>';
+          promptComments = comments || [];
+          renderPreviewComments();
         })
-        .catch(() => { preview.innerHTML = '<p class="text-muted">No comments yet.</p>'; });
+        .catch(() => {
+          promptComments = [];
+          renderPreviewComments();
+        });
+    }
+
+    if (!user && promptCommentFormWrap) {
+      promptCommentFormWrap.innerHTML = '<p class="text-muted"><a href="' + buildLoginRedirectUrl(base + 'pages/prompt.html?id=' + encodeURIComponent(prompt.id)) + '">Log in</a> to post a comment.</p>';
+    }
+    if (promptCommentForm) {
+      promptCommentForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!requireLogin('Login required to comment.')) return;
+        const body = (promptCommentForm.promptCommentBody && promptCommentForm.promptCommentBody.value || '').trim();
+        if (!body) {
+          if (promptCommentError) {
+            promptCommentError.textContent = 'Comment text is required.';
+            promptCommentError.style.display = 'block';
+          }
+          return;
+        }
+        if (promptCommentError) promptCommentError.style.display = 'none';
+        try {
+          const createdComment = await fetch(API_BASE + '/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt_id: promptIdInt, author_id: userIdInt, content: body })
+          }).then(r => r.ok ? r.json() : null);
+          if (createdComment) {
+            promptComments = [createdComment].concat(promptComments);
+            promptCommentForm.reset();
+            renderPreviewComments();
+          }
+        } catch (err) {
+          if (promptCommentError) {
+            promptCommentError.textContent = 'Failed to post comment. Please try again.';
+            promptCommentError.style.display = 'block';
+          }
+          console.error('Prompt comment failed:', err.message);
+        }
+      });
     }
 
     const btnUpvote = document.getElementById('btnUpvote');
@@ -1091,17 +1240,44 @@
     if (form) {
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (!user) { window.location.href = base + 'pages/login.html'; return; }
+        if (!user) { redirectToLogin(base + 'pages/comments.html?promptId=' + encodeURIComponent(promptIdInt)); return; }
         const body = (form.body && form.body.value || '').trim();
         if (!body) return;
         try {
-          await fetch(API_BASE + '/comments', {
+          const created = await fetch(API_BASE + '/comments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt_id: promptIdInt, author_id: parseInt(user.id, 10), content: body })
-          });
+          }).then(r => r.ok ? r.json() : null);
           form.body.value = '';
-          renderComments();
+          if (created) {
+            const listEl = document.getElementById('commentsList');
+            if (listEl && listEl.querySelector('.text-muted')) listEl.innerHTML = '';
+            if (listEl) {
+              listEl.insertAdjacentHTML('afterbegin', `
+                <div class="comment-item" data-comment-id="${created.id}">
+                  <div class="comment-author">${userChip(created.author_id, created.author_username || 'User', created.avatar_style, created.avatar_seed, base)}</div>
+                  <div class="comment-body">${escapeHtml(created.content)}</div>
+                  <div class="comment-meta">${formatDate(created.created_at)}</div>
+                  <div class="comment-actions"><button type="button" class="btn btn-outline btn-sm btn-delete-comment" data-id="${created.id}">Delete</button></div>
+                </div>
+              `);
+              const deleteBtn = listEl.querySelector('.comment-item[data-comment-id="' + created.id + '"] .btn-delete-comment');
+              if (deleteBtn) {
+                deleteBtn.addEventListener('click', async function () {
+                  const cid = this.getAttribute('data-id');
+                  try {
+                    await fetch(API_BASE + '/comments/' + cid, { method: 'DELETE' });
+                    renderComments();
+                  } catch (err) {
+                    console.error('Delete comment failed:', err.message);
+                  }
+                });
+              }
+            }
+          } else {
+            renderComments();
+          }
         } catch (err) {
           console.error('Add comment failed:', err.message);
         }
@@ -1110,13 +1286,13 @@
 
     const addArea = document.getElementById('addCommentArea');
     if (addArea && !user) {
-      addArea.innerHTML = '<p class="text-muted"><a href="' + base + 'pages/login.html">Log in</a> to post a comment.</p>';
+      addArea.innerHTML = '<p class="text-muted"><a href="' + buildLoginRedirectUrl(base + 'pages/comments.html?promptId=' + encodeURIComponent(promptIdInt)) + '">Log in</a> to post a comment.</p>';
     }
     renderComments();
   }
 
   function initCreatePrompt() {
-    const loginUrl = getBase() + 'pages/login.html?msg=login_required';
+    const loginUrl = buildLoginRedirectUrl(getBase() + 'pages/postcreation.html');
     const user = requireAuth(loginUrl);
     if (!user) return;
 
@@ -1127,6 +1303,26 @@
     const aiBadgeEl = document.getElementById('aiValidationResult');
     const base = getBase();
     if (!form) return;
+    const requiredIds = ['title', 'description', 'category', 'model', 'content'];
+
+    function clearFieldErrors() {
+      requiredIds.forEach(function (fieldId) {
+        const input = document.getElementById(fieldId);
+        const errorEl = document.getElementById(fieldId + 'Error');
+        if (input) input.setAttribute('aria-invalid', 'false');
+        if (errorEl) { errorEl.textContent = ''; errorEl.style.display = 'none'; }
+      });
+    }
+
+    function setFieldError(fieldId, text) {
+      const input = document.getElementById(fieldId);
+      const errorEl = document.getElementById(fieldId + 'Error');
+      if (input) input.setAttribute('aria-invalid', 'true');
+      if (errorEl) {
+        errorEl.textContent = text;
+        errorEl.style.display = 'block';
+      }
+    }
 
     // --- AI validation state ---
     // Tracks the result of the last completed AI check so the submit handler
@@ -1295,6 +1491,7 @@
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       if (msgEl) { msgEl.style.display = 'none'; msgEl.className = 'msg'; }
+      clearFieldErrors();
 
       const title = (form.title && form.title.value || '').trim();
       const description = (form.description && form.description.value || '').trim();
@@ -1312,19 +1509,33 @@
         return;
       }
       if (!title) {
+        setFieldError('title', 'Title is required.');
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Title is required.'; msgEl.style.display = 'block'; }
         return;
       }
       if (!description) {
+        setFieldError('description', 'Description is required.');
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Description is required.'; msgEl.style.display = 'block'; }
         return;
       }
       if (!category) {
+        setFieldError('category', 'Please select a category.');
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Please select a category.'; msgEl.style.display = 'block'; }
         return;
       }
+      if (!/^\d+$/.test(String(category))) {
+        setFieldError('category', 'Select a valid category from the list.');
+        if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Valid category selection is required.'; msgEl.style.display = 'block'; }
+        return;
+      }
       if (!model) {
+        setFieldError('model', 'Please select an AI model.');
         if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Please select an AI model.'; msgEl.style.display = 'block'; }
+        return;
+      }
+      if (!content) {
+        setFieldError('content', 'Prompt content is required.');
+        if (msgEl) { msgEl.className = 'msg msg-error'; msgEl.textContent = 'Prompt content is required.'; msgEl.style.display = 'block'; }
         return;
       }
 

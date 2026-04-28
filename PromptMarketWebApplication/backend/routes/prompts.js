@@ -257,10 +257,9 @@ router.post('/', handleUpload, async (req, res) => {
   // For multipart/form-data, the text fields are in req.body and the file is in req.file.
   const { title, description, content, model, author_id, category_id, tags } = req.body || {};
 
-  // Very basic validation to keep things beginner-friendly.
-  if (!title || !content || !author_id) {
+  if (!title || !description || !content || !author_id || !category_id || !model) {
     return res.status(400).json({
-      error: 'title, content, and author_id are required.'
+      error: 'title, description, content, model, author_id, and category_id are required.'
     });
   }
 
